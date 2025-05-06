@@ -15,6 +15,7 @@ import GamesPage from "./pages/GamesPage";
 import TicTacToe from "./pages/games/TicTacToe";
 import Game2048 from "./pages/games/Game2048";
 import WalletPage from "./pages/WalletPage";
+import WithdrawalPage from "./pages/WithdrawalPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="games/tictactoe" element={<TicTacToe />} />
                 <Route path="games/2048" element={<Game2048 />} />
                 <Route path="wallet" element={<WalletPage />} />
+                <Route path="withdraw" element={<WithdrawalPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>

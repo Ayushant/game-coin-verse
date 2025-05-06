@@ -1,31 +1,58 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface CoinDisplayProps {
   showBalance?: boolean;
+  showTooltip?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-const CoinDisplay = ({ showBalance = true }: CoinDisplayProps) => {
+const CoinDisplay = ({ 
+  showBalance = true, 
+  showTooltip = true,
+  size = 'md'
+}: CoinDisplayProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   if (!user) return null;
 
   const handleCoinDisplay = () => {
-    toast({
-      title: "Coin Balance",
-      description: `Your current balance is ${user.coins} coins.`,
-    });
+    if (showTooltip) {
+      toast({
+        title: "Coin Balance",
+        description: `Your current balance is ${user.coins} coins.`,
+      });
+    }
+  };
+
+  const handleNavigate = () => {
+    navigate('/wallet');
+  };
+
+  const sizeClasses = {
+    sm: 'h-4 w-4',
+    md: 'h-5 w-5',
+    lg: 'h-6 w-6'
+  };
+
+  const textSizeClasses = {
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-base'
   };
 
   return (
     <div 
-      className="coin-display" 
-      onClick={handleCoinDisplay}
+      className="coin-display flex items-center bg-gradient-to-r from-purple-500/30 to-purple-600/30 backdrop-blur-sm px-3 py-1.5 rounded-full cursor-pointer hover:from-purple-500/40 hover:to-purple-600/40 transition-colors" 
+      onClick={handleNavigate}
+      onMouseEnter={handleCoinDisplay}
     >
       <svg
-        className="h-5 w-5 text-game-gold animate-bounce-subtle"
+        className={`${sizeClasses[size]} text-game-gold animate-bounce-subtle mr-1.5`}
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -33,7 +60,7 @@ const CoinDisplay = ({ showBalance = true }: CoinDisplayProps) => {
         <circle cx="12" cy="12" r="8" fill="#FFD54F" />
         <circle cx="12" cy="12" r="4" fill="#FFE082" />
       </svg>
-      {showBalance && <span>{user.coins}</span>}
+      {showBalance && <span className={`font-medium ${textSizeClasses[size]} text-white`}>{user.coins}</span>}
     </div>
   );
 };

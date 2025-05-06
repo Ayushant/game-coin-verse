@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Coins, TrendingUp, ArrowDown, Clock } from 'lucide-react';
@@ -51,7 +51,10 @@ const WalletPage = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Button className="flex items-center justify-center gap-2 bg-gradient-game">
+          <Button 
+            className="flex items-center justify-center gap-2 bg-gradient-game"
+            onClick={() => navigate('/withdraw')}
+          >
             <ArrowDown className="h-5 w-5" />
             Withdraw
           </Button>
