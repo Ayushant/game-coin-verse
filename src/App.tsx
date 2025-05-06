@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import GamesPage from "./pages/GamesPage";
 import TicTacToe from "./pages/games/TicTacToe";
 import Game2048 from "./pages/games/Game2048";
+import Sudoku from "./pages/games/Sudoku";
 import WalletPage from "./pages/WalletPage";
 import WithdrawalPage from "./pages/WithdrawalPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="games" element={<GamesPage />} />
                 <Route path="games/tictactoe" element={<TicTacToe />} />
                 <Route path="games/2048" element={<Game2048 />} />
+                <Route path="games/sudoku" element={<Sudoku />} />
                 <Route path="wallet" element={<WalletPage />} />
                 <Route path="withdraw" element={<WithdrawalPage />} />
                 <Route path="profile" element={<ProfilePage />} />

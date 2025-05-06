@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, Grid3X3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 
@@ -48,6 +48,16 @@ const GamesPage = () => {
           <div className="h-5 w-5 bg-white/70 rounded-sm flex items-center justify-center text-amber-500 text-xs font-bold">8</div>
           <div className="h-5 w-5 bg-white/90 rounded-sm flex items-center justify-center text-amber-500 text-xs font-bold">16</div>
         </div>
+      )
+    },
+    { 
+      id: 'sudoku',
+      name: 'Sudoku', 
+      description: 'Fill the grid with numbers', 
+      reward: 15,
+      color: 'from-blue-500 to-blue-600',
+      icon: (
+        <Grid3X3 className="h-10 w-10 text-white" />
       )
     },
   ];
