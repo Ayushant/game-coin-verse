@@ -1,8 +1,8 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,32 +12,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowDown, Clock, Wallet } from 'lucide-react';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 
+interface Withdrawal {
+  id: string;
+  amount: number;
+  coins_spent: number;
+  method: string;
+  payment_detail: string;
+  status: string;
+  requested_at: string;
+}
+
 const WithdrawalPage = () => {
-  const { user, updateUserCoins } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [paymentDetail, setPaymentDetail] = useState('');
-  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   
   // Exchange rate: 100 coins = ₹1
   const coinToRupeeRate = 0.01;
   
   // Fetch withdrawal history from Supabase
   const fetchWithdrawals = async () => {
-    if (!user) return;
+    if (!user || user.isGuest) return;
     
     try {
       const { data, error } = await supabase
         .from('withdrawals')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('requested_at', { ascending: false });
         
+      if (error) throw error;
+      
       if (data) {
-        setWithdrawals(data);
+        setWithdrawals(data as Withdrawal[]);
       }
     } catch (error) {
       console.error('Error fetching withdrawals:', error);
@@ -102,15 +114,29 @@ const WithdrawalPage = () => {
     setIsLoading(true);
     
     try {
-      // Create withdrawal record in Supabase
+      // For guest users, just simulate a withdrawal
+      if (user.isGuest) {
+        // Simulate withdrawal for guest users
+        setTimeout(() => {
+          toast({
+            title: "Guest Mode",
+            description: "Withdrawals are simulated in guest mode. Please sign up for real withdrawals.",
+          });
+          setIsLoading(false);
+        }, 1000);
+        return;
+      }
+      
+      // Create withdrawal record in Supabase for registered users
+      const rupeeAmount = coinAmount * coinToRupeeRate;
       const { data, error } = await supabase
         .from('withdrawals')
         .insert([
           {
             user_id: user.id,
-            coins: coinAmount,
-            rupees: coinAmount * coinToRupeeRate,
-            payment_method: paymentMethod,
+            coins_spent: coinAmount,
+            amount: rupeeAmount,
+            method: paymentMethod,
             payment_detail: paymentDetail,
             status: 'pending'
           }
@@ -119,12 +145,9 @@ const WithdrawalPage = () => {
         
       if (error) throw error;
       
-      // Update user's coin balance
-      await updateUserCoins(-coinAmount);
-      
       toast({
         title: "Withdrawal Requested",
-        description: `Your withdrawal request for ${coinAmount} coins (₹${(coinAmount * coinToRupeeRate).toFixed(2)}) has been submitted`,
+        description: `Your withdrawal request for ${coinAmount} coins (₹${rupeeAmount.toFixed(2)}) has been submitted`,
       });
       
       // Refresh withdrawal history
@@ -145,9 +168,11 @@ const WithdrawalPage = () => {
   };
   
   // Load withdrawal history when component mounts
-  useState(() => {
-    fetchWithdrawals();
-  });
+  useEffect(() => {
+    if (user && !user.isGuest) {
+      fetchWithdrawals();
+    }
+  }, [user]);
   
   if (!user) {
     navigate('/login');
@@ -241,6 +266,12 @@ const WithdrawalPage = () => {
               <ArrowDown className="h-4 w-4" />
               {isLoading ? 'Processing...' : 'Withdraw'}
             </Button>
+            
+            {user.isGuest && (
+              <div className="mt-2 p-3 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500 rounded-md text-sm text-yellow-800 dark:text-yellow-400">
+                <p>⚠️ You're in guest mode. Sign up for real withdrawals.</p>
+              </div>
+            )}
           </form>
         </div>
       </Card>
@@ -251,7 +282,9 @@ const WithdrawalPage = () => {
       
       <Card className="game-card p-4">
         <div className="space-y-3">
-          {withdrawals.length === 0 ? (
+          {user.isGuest ? (
+            <p className="text-center py-6 text-gray-500">Sign up to access withdrawal history</p>
+          ) : withdrawals.length === 0 ? (
             <p className="text-center py-6 text-gray-500">No withdrawal history yet</p>
           ) : (
             withdrawals.map((withdrawal) => (
@@ -262,22 +295,23 @@ const WithdrawalPage = () => {
                   </div>
                   <div className="ml-3">
                     <div className="font-medium">
-                      {withdrawal.payment_method.toUpperCase()} Withdrawal
+                      {withdrawal.method.toUpperCase()} Withdrawal
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                       <Clock className="h-3 w-3 mr-1" />
-                      {new Date(withdrawal.created_at).toLocaleDateString()}
+                      {new Date(withdrawal.requested_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
                   <div className="text-lg font-semibold text-red-500">
-                    -{withdrawal.coins}
+                    -{withdrawal.coins_spent}
                   </div>
-                  <div className="text-xs px-2 py-0.5 rounded-full 
-                    ${withdrawal.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
-                      withdrawal.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 
-                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'}">
+                  <div className={`text-xs px-2 py-0.5 rounded-full ${
+                    withdrawal.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
+                    withdrawal.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  }`}>
                     {withdrawal.status.charAt(0).toUpperCase() + withdrawal.status.slice(1)}
                   </div>
                 </div>

@@ -9,16 +9,197 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      game_sessions: {
+        Row: {
+          coins_earned: number
+          game_name: string
+          id: string
+          played_at: string | null
+          score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          coins_earned?: number
+          game_name: string
+          id?: string
+          played_at?: string | null
+          score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          coins_earned?: number
+          game_name?: string
+          id?: string
+          played_at?: string | null
+          score?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      missions: {
+        Row: {
+          coins_reward: number
+          description: string
+          id: string
+          is_active: boolean | null
+          is_daily: boolean | null
+          title: string
+        }
+        Insert: {
+          coins_reward: number
+          description: string
+          id?: string
+          is_active?: boolean | null
+          is_daily?: boolean | null
+          title: string
+        }
+        Update: {
+          coins_reward?: number
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          is_daily?: boolean | null
+          title?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          coins: number | null
+          created_at: string | null
+          id: string
+          is_guest: boolean | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          coins?: number | null
+          created_at?: string | null
+          id: string
+          is_guest?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          coins?: number | null
+          created_at?: string | null
+          id?: string
+          is_guest?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          action: string
+          coins: number
+          created_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          coins: number
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          coins?: number
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_missions: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          mission_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          mission_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          mission_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_missions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawals: {
+        Row: {
+          amount: number
+          coins_spent: number
+          id: string
+          method: string
+          payment_detail: string
+          processed_at: string | null
+          requested_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          coins_spent: number
+          id?: string
+          method: string
+          payment_detail: string
+          processed_at?: string | null
+          requested_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          coins_spent?: number
+          id?: string
+          method?: string
+          payment_detail?: string
+          processed_at?: string | null
+          requested_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "user" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +314,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["user", "admin"],
+    },
   },
 } as const
