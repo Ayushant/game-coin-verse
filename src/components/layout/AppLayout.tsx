@@ -1,6 +1,6 @@
 
 import { ReactNode } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import BottomNavBar from './BottomNavBar';
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +12,7 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const { loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { loading: adminLoading, isAdmin } = useAdmin();
   const location = useLocation();
   
@@ -28,17 +28,23 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     );
   }
 
-  if (isAdminRoute && !isAdmin) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
-        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-        <p className="mb-4">You do not have permission to access this page.</p>
-        <a href="/" className="game-button">Return to Home</a>
-      </div>
-    );
-  }
-
+  // Handle admin route access specifically for project75database75@gmail.com
   if (isAdminRoute) {
+    if (!user) {
+      // Redirect to login if not authenticated
+      return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+    
+    if (!isAdmin) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="mb-4">You do not have permission to access this page.</p>
+          <a href="/" className="game-button">Return to Home</a>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-screen max-w-none mx-auto">
         <AdminSidebar />

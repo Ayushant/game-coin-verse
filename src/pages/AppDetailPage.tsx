@@ -70,6 +70,7 @@ const AppDetailPage = () => {
       if (appError) throw appError;
       
       // Check if user has purchased this app
+      let isPurchased = false;
       if (user) {
         const { data: purchaseData, error: purchaseError } = await supabase
           .from('purchases')
@@ -78,17 +79,18 @@ const AppDetailPage = () => {
           .eq('app_id', appId)
           .maybeSingle();
           
-        if (purchaseError && purchaseError.code !== 'PGRST116') {
+        if (!purchaseError || purchaseError.code === 'PGRST116') {
+          // PGRST116 is "no rows returned" error
+          isPurchased = !!purchaseData;
+        } else {
           throw purchaseError;
         }
-        
-        setApp({
-          ...appData,
-          is_purchased: !!purchaseData
-        });
-      } else {
-        setApp(appData);
       }
+
+      setApp({
+        ...appData as App,
+        is_purchased: isPurchased
+      });
     } catch (error) {
       console.error('Error loading app details:', error);
       toast({

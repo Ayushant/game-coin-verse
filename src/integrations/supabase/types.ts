@@ -36,6 +36,53 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_payments: {
+        Row: {
+          app_id: string
+          id: string
+          payment_method: string
+          payment_proof_url: string | null
+          status: string
+          submitted_at: string
+          user_id: string
+          user_note: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          app_id: string
+          id?: string
+          payment_method: string
+          payment_proof_url?: string | null
+          status?: string
+          submitted_at?: string
+          user_id: string
+          user_note?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          app_id?: string
+          id?: string
+          payment_method?: string
+          payment_proof_url?: string | null
+          status?: string
+          submitted_at?: string
+          user_id?: string
+          user_note?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_payments_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "paid_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       missions: {
         Row: {
           coins_reward: number
@@ -60,6 +107,45 @@ export type Database = {
           is_active?: boolean | null
           is_daily?: boolean | null
           title?: string
+        }
+        Relationships: []
+      }
+      paid_apps: {
+        Row: {
+          coin_price: number | null
+          created_at: string
+          description: string
+          download_url: string
+          id: string
+          image_url: string | null
+          inr_price: number | null
+          name: string
+          payment_instructions: string | null
+          payment_method: string
+        }
+        Insert: {
+          coin_price?: number | null
+          created_at?: string
+          description: string
+          download_url: string
+          id?: string
+          image_url?: string | null
+          inr_price?: number | null
+          name: string
+          payment_instructions?: string | null
+          payment_method?: string
+        }
+        Update: {
+          coin_price?: number | null
+          created_at?: string
+          description?: string
+          download_url?: string
+          id?: string
+          image_url?: string | null
+          inr_price?: number | null
+          name?: string
+          payment_instructions?: string | null
+          payment_method?: string
         }
         Relationships: []
       }
@@ -93,6 +179,38 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          payment_type: string
+          user_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          payment_type: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          payment_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "paid_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rewards: {
         Row: {
           action: string
@@ -114,6 +232,27 @@ export type Database = {
           created_at?: string | null
           id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          coins_to_inr: number
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          coins_to_inr: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          coins_to_inr?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
         }
         Relationships: []
       }
