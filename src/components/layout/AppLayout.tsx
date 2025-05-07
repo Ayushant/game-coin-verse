@@ -1,8 +1,10 @@
 
 import { ReactNode } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import BottomNavBar from './BottomNavBar';
+import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/contexts/AdminContext';
 import { Loader2 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -10,13 +12,41 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const { loading } = useAuth();
+  const { loading: authLoading } = useAuth();
+  const { loading: adminLoading, isAdmin } = useAdmin();
+  const location = useLocation();
+  
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const loading = authLoading || adminLoading;
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
         <Loader2 className="h-10 w-10 animate-spin" />
         <span className="ml-2 text-xl">Loading...</span>
+      </div>
+    );
+  }
+
+  if (isAdminRoute && !isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
+        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+        <p className="mb-4">You do not have permission to access this page.</p>
+        <a href="/" className="game-button">Return to Home</a>
+      </div>
+    );
+  }
+
+  if (isAdminRoute) {
+    return (
+      <div className="flex h-screen max-w-none mx-auto">
+        <AdminSidebar />
+        <div className="flex-1 overflow-auto">
+          <div className="p-4 md:p-6">
+            {children || <Outlet />}
+          </div>
+        </div>
       </div>
     );
   }

@@ -1,233 +1,242 @@
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Card } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Coins, TrendingUp, ArrowDown, Clock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/contexts/AdminContext';
+import { Wallet, ArrowRight, Download, Coins, CircleDollarSign, Store } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-interface Transaction {
-  id: number | string;
-  type: 'earn' | 'spend';
+type Withdrawal = {
+  id: string;
   amount: number;
-  source: string;
-  time: string;
-  timestamp?: Date;
-}
+  status: string;
+  requested_at: string;
+};
+
+type Purchase = {
+  id: string;
+  app_name: string;
+  payment_type: string;
+  purchased_at: string;
+};
 
 const WalletPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { getConversionRateInINR } = useAdmin();
+  const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
+  const [recentPurchases, setRecentPurchases] = useState<Purchase[]>([]);
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(true);
+  const [loadingPurchases, setLoadingPurchases] = useState(true);
 
   useEffect(() => {
-    // Redirect to login if no user
-    if (!user) {
-      navigate('/login');
-      return;
+    if (user && !user.isGuest) {
+      loadRecentWithdrawals();
+      loadRecentPurchases();
+    } else {
+      setLoadingWithdrawals(false);
+      setLoadingPurchases(false);
     }
+  }, [user]);
 
-    // Fetch transactions
-    const fetchTransactions = async () => {
-      if (user.isGuest) {
-        // For guest users, use sample data
-        setTransactions([
-          { id: 1, type: 'earn', amount: 5, source: 'Tic Tac Toe win', time: '2 hours ago' },
-          { id: 2, type: 'earn', amount: 10, source: '2048 game', time: '4 hours ago' },
-          { id: 3, type: 'earn', amount: 10, source: 'Daily login', time: '1 day ago' },
-          { id: 4, type: 'spend', amount: 15, source: 'Scratch card', time: '2 days ago' },
-        ]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        // Get game sessions for earnings
-        const { data: gameSessions, error: gameError } = await supabase
-          .from('game_sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('played_at', { ascending: false })
-          .limit(10);
-
-        if (gameError) throw gameError;
-
-        // Get rewards for additional earnings
-        const { data: rewards, error: rewardsError } = await supabase
-          .from('rewards')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (rewardsError) throw rewardsError;
-
-        // Get withdrawals for spending
-        const { data: withdrawals, error: withdrawalsError } = await supabase
-          .from('withdrawals')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('requested_at', { ascending: false })
-          .limit(5);
-
-        if (withdrawalsError) throw withdrawalsError;
-
-        // Combine and format transactions
-        const formattedGameSessions = gameSessions?.map(session => ({
-          id: session.id,
-          type: 'earn' as const,
-          amount: session.coins_earned,
-          source: `${session.game_name} game`,
-          time: formatTime(new Date(session.played_at)),
-          timestamp: new Date(session.played_at)
-        })) || [];
-
-        const formattedRewards = rewards?.map(reward => ({
-          id: reward.id,
-          type: 'earn' as const,
-          amount: reward.coins,
-          source: formatRewardSource(reward.action),
-          time: formatTime(new Date(reward.created_at)),
-          timestamp: new Date(reward.created_at)
-        })) || [];
-
-        const formattedWithdrawals = withdrawals?.map(withdrawal => ({
-          id: withdrawal.id,
-          type: 'spend' as const,
-          amount: withdrawal.coins_spent,
-          source: `${withdrawal.method.toUpperCase()} Withdrawal`,
-          time: formatTime(new Date(withdrawal.requested_at)),
-          timestamp: new Date(withdrawal.requested_at)
-        })) || [];
-
-        // Combine and sort all transactions by timestamp
-        const allTransactions = [...formattedGameSessions, ...formattedRewards, ...formattedWithdrawals]
-          .sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0))
-          .slice(0, 10); // Limit to 10 most recent
-
-        setTransactions(allTransactions);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTransactions();
-  }, [user, navigate]);
-
-  const formatTime = (date: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
-    if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
-    if (diffDays < 30) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
-    return date.toLocaleDateString();
+  const loadRecentWithdrawals = async () => {
+    try {
+      setLoadingWithdrawals(true);
+      
+      const { data, error } = await supabase
+        .from('withdrawals')
+        .select('id, amount, status, requested_at')
+        .eq('user_id', user?.id)
+        .order('requested_at', { ascending: false })
+        .limit(5);
+        
+      if (error) throw error;
+      
+      setRecentWithdrawals(data || []);
+    } catch (error) {
+      console.error('Error loading withdrawals:', error);
+    } finally {
+      setLoadingWithdrawals(false);
+    }
   };
 
-  const formatRewardSource = (action: string): string => {
-    const sourceMap: Record<string, string> = {
-      'watch_ad': 'Watching ad',
-      'daily_login': 'Daily login',
-      'download_app': 'Downloading app',
-      'spin_wheel': 'Spin wheel',
-      'mission_complete': 'Mission completed',
-      'scratch_card': 'Scratch card',
-    };
-
-    return sourceMap[action] || action.replace('_', ' ');
+  const loadRecentPurchases = async () => {
+    try {
+      setLoadingPurchases(true);
+      
+      const { data, error } = await supabase
+        .from('purchases')
+        .select(`
+          id, 
+          payment_type,
+          created_at,
+          paid_apps:app_id (name)
+        `)
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+        
+      if (error) throw error;
+      
+      const formattedPurchases = data.map(item => ({
+        id: item.id,
+        app_name: item.paid_apps?.name || 'Unknown App',
+        payment_type: item.payment_type,
+        purchased_at: item.created_at,
+      }));
+      
+      setRecentPurchases(formattedPurchases);
+    } catch (error) {
+      console.error('Error loading purchases:', error);
+    } finally {
+      setLoadingPurchases(false);
+    }
   };
 
-  if (!user) return null;
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-500';
+      case 'pending':
+        return 'text-yellow-500';
+      case 'failed':
+        return 'text-red-500';
+      default:
+        return 'text-gray-500';
+    }
+  };
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Wallet</h1>
-      </div>
-
-      <Card className="game-card p-6 mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-gray-600 dark:text-gray-300">Balance</div>
-          <div className="flex items-center">
-            <TrendingUp className="text-green-500 mr-1 h-4 w-4" />
-            <span className="text-green-500 text-xs">+15% this week</span>
-          </div>
+      <h1 className="text-2xl font-bold mb-6">Your Wallet</h1>
+      
+      <div className="bg-gradient-to-r from-game-purple to-game-purple-dark rounded-xl p-5 mb-6 shadow-lg relative overflow-hidden text-white">
+        <div className="absolute top-0 right-0 opacity-10">
+          <Coins className="w-40 h-40 -mt-8 -mr-8" />
         </div>
-
-        <div className="flex items-center mb-6">
-          <svg className="h-8 w-8 text-game-gold mr-3 animate-bounce-subtle" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="12" r="10" fill="#FFA726" />
-            <circle cx="12" cy="12" r="8" fill="#FFD54F" />
-            <circle cx="12" cy="12" r="4" fill="#FFE082" />
-          </svg>
-          <h2 className="text-4xl font-bold">{user.coins}</h2>
+        <div className="flex items-center mb-4">
+          <Wallet className="h-6 w-6 mr-2" />
+          <h2 className="text-xl font-semibold">Your Balance</h2>
         </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Button 
-            className="flex items-center justify-center gap-2 bg-gradient-game"
-            onClick={() => navigate('/withdraw')}
-          >
-            <ArrowDown className="h-5 w-5" />
-            Withdraw
-          </Button>
-          <Button className="flex items-center justify-center gap-2 bg-gradient-gold">
-            <Coins className="h-5 w-5" />
-            Get Coins
-          </Button>
+        <div className="mb-2">
+          <p className="text-3xl font-bold">{user?.coins || 0}</p>
+          <p className="text-sm opacity-80">Coins</p>
         </div>
-      </Card>
-
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-white">Recent Activity</h2>
-      </div>
-
-      <Card className="game-card p-4">
-        <div className="space-y-3">
-          {isLoading ? (
-            <div className="py-8 text-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent mx-auto"></div>
-              <p className="text-sm mt-2 text-gray-400">Loading transactions...</p>
-            </div>
-          ) : transactions.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-gray-500">No transactions yet</p>
-            </div>
+        <div className="mt-4">
+          {user?.isGuest ? (
+            <p className="text-xs opacity-80">Sign up to withdraw coins</p>
           ) : (
-            transactions.map((transaction) => (
-              <div key={transaction.id} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 last:border-none pb-2 last:pb-0">
-                <div className="flex items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${transaction.type === 'earn' ? 'bg-green-100 text-green-500' : 'bg-red-100 text-red-500'} dark:bg-opacity-20`}>
-                    {transaction.type === 'earn' ? (
-                      <Coins className="h-5 w-5" />
-                    ) : (
-                      <ArrowDown className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div className="ml-3">
-                    <div className="font-medium">{transaction.source}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {transaction.time}
-                    </div>
-                  </div>
-                </div>
-                <div className={`text-lg font-semibold ${transaction.type === 'earn' ? 'text-green-500' : 'text-red-500'}`}>
-                  {transaction.type === 'earn' ? '+' : '-'}{transaction.amount}
-                </div>
-              </div>
-            ))
+            <p className="text-xs opacity-80">
+              Estimated value: ₹{getConversionRateInINR(user?.coins || 0)}
+            </p>
           )}
         </div>
-      </Card>
+        <div className="mt-5 space-x-3">
+          {!user?.isGuest && (
+            <Button 
+              variant="secondary"
+              className="bg-white/20 hover:bg-white/30 text-white"
+              asChild
+            >
+              <Link to="/withdraw">
+                Withdraw <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Withdrawals</CardTitle>
+            <CardDescription>Your recent withdrawal requests</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingWithdrawals ? (
+              <p className="text-center py-4 text-muted-foreground">Loading...</p>
+            ) : recentWithdrawals.length > 0 ? (
+              <ul className="space-y-3">
+                {recentWithdrawals.map((withdrawal) => (
+                  <li key={withdrawal.id} className="flex justify-between items-center border-b pb-2">
+                    <div>
+                      <p className="font-medium">₹{withdrawal.amount}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(withdrawal.requested_at)}</p>
+                    </div>
+                    <span className={`capitalize ${getStatusColor(withdrawal.status)}`}>
+                      {withdrawal.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">
+                {user?.isGuest 
+                  ? "Sign up to withdraw coins" 
+                  : "No withdrawal history"}
+              </p>
+            )}
+          </CardContent>
+          <CardFooter>
+            {!user?.isGuest && (
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/withdraw">
+                  <CircleDollarSign className="w-4 h-4 mr-2" /> 
+                  Withdraw Funds
+                </Link>
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Purchases</CardTitle>
+            <CardDescription>Your recent app purchases</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingPurchases ? (
+              <p className="text-center py-4 text-muted-foreground">Loading...</p>
+            ) : recentPurchases.length > 0 ? (
+              <ul className="space-y-3">
+                {recentPurchases.map((purchase) => (
+                  <li key={purchase.id} className="flex justify-between items-center border-b pb-2">
+                    <div>
+                      <p className="font-medium">{purchase.app_name}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(purchase.purchased_at)}</p>
+                    </div>
+                    <span className="capitalize text-sm">
+                      {purchase.payment_type}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">No purchase history</p>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/store">
+                <Store className="w-4 h-4 mr-2" /> 
+                Visit App Store
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 };
