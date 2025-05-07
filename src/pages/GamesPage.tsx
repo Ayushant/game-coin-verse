@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Search, Grid3X3 } from 'lucide-react';
+import { Search, Grid3X3, Calculator, Grid, Coffee } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 
@@ -58,6 +58,36 @@ const GamesPage = () => {
       color: 'from-blue-500 to-blue-600',
       icon: (
         <Grid3X3 className="h-10 w-10 text-white" />
+      )
+    },
+    { 
+      id: 'mathchallenge',
+      name: 'Math Challenge', 
+      description: 'Test your math skills', 
+      reward: 10,
+      color: 'from-emerald-500 to-teal-600',
+      icon: (
+        <Calculator className="h-10 w-10 text-white" />
+      )
+    },
+    { 
+      id: 'blockpuzzle',
+      name: 'Block Puzzle', 
+      description: 'Clear rows with blocks', 
+      reward: 15,
+      color: 'from-pink-500 to-rose-600',
+      icon: (
+        <Grid className="h-10 w-10 text-white" />
+      )
+    },
+    { 
+      id: 'memorymatch',
+      name: 'Memory Match', 
+      description: 'Find all the matching pairs', 
+      reward: 12,
+      color: 'from-indigo-500 to-violet-600',
+      icon: (
+        <Coffee className="h-10 w-10 text-white" />
       )
     },
   ];

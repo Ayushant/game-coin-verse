@@ -15,6 +15,9 @@ import GamesPage from "./pages/GamesPage";
 import TicTacToe from "./pages/games/TicTacToe";
 import Game2048 from "./pages/games/Game2048";
 import Sudoku from "./pages/games/Sudoku";
+import MathChallenge from "./pages/games/MathChallenge";
+import BlockPuzzle from "./pages/games/BlockPuzzle";
+import MemoryMatch from "./pages/games/MemoryMatch";
 import WalletPage from "./pages/WalletPage";
 import WithdrawalPage from "./pages/WithdrawalPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -44,6 +47,9 @@ const App = () => (
                 <Route path="games/tictactoe" element={<TicTacToe />} />
                 <Route path="games/2048" element={<Game2048 />} />
                 <Route path="games/sudoku" element={<Sudoku />} />
+                <Route path="games/mathchallenge" element={<MathChallenge />} />
+                <Route path="games/blockpuzzle" element={<BlockPuzzle />} />
+                <Route path="games/memorymatch" element={<MemoryMatch />} />
                 <Route path="wallet" element={<WalletPage />} />
                 <Route path="withdraw" element={<WithdrawalPage />} />
                 <Route path="profile" element={<ProfilePage />} />
