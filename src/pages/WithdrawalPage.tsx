@@ -8,7 +8,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowDown, Clock, Wallet } from 'lucide-react';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 
@@ -16,8 +15,7 @@ interface Withdrawal {
   id: string;
   amount: number;
   coins_spent: number;
-  method: string;
-  payment_detail: string;
+  upi_id: string;
   status: string;
   requested_at: string;
 }
@@ -28,11 +26,10 @@ const WithdrawalPage = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('upi');
-  const [paymentDetail, setPaymentDetail] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   
-  // Exchange rate: 100 coins = ₹1
+  // Exchange rate: 1000 coins = ₹10
   const coinToRupeeRate = 0.01;
   
   // Fetch withdrawal history from Supabase
@@ -82,10 +79,11 @@ const WithdrawalPage = () => {
     }
     
     // Minimum withdrawal amount (500 coins = ₹5)
-    if (coinAmount < 500) {
+    const minCoins = 500;
+    if (coinAmount < minCoins) {
       toast({
         title: "Minimum Withdrawal",
-        description: "Minimum withdrawal amount is 500 coins (₹5)",
+        description: `Minimum withdrawal amount is ${minCoins} coins (₹${(minCoins * coinToRupeeRate).toFixed(2)})`,
         variant: "destructive",
       });
       return;
@@ -101,11 +99,11 @@ const WithdrawalPage = () => {
       return;
     }
     
-    // Validate payment details
-    if (!paymentDetail) {
+    // Validate UPI ID
+    if (!upiId || !upiId.includes('@')) {
       toast({
-        title: "Missing Payment Details",
-        description: "Please enter your payment details",
+        title: "Invalid UPI ID",
+        description: "Please enter a valid UPI ID (e.g. yourname@upi)",
         variant: "destructive",
       });
       return;
@@ -134,10 +132,9 @@ const WithdrawalPage = () => {
         .insert([
           {
             user_id: user.id,
-            coins_spent: coinAmount,
+            coins: coinAmount,
             amount: rupeeAmount,
-            method: paymentMethod,
-            payment_detail: paymentDetail,
+            upi_id: upiId,
             status: 'pending'
           }
         ])
@@ -153,7 +150,7 @@ const WithdrawalPage = () => {
       // Refresh withdrawal history
       fetchWithdrawals();
       setAmount('');
-      setPaymentDetail('');
+      setUpiId('');
       
     } catch (error) {
       console.error('Error processing withdrawal:', error);
@@ -224,35 +221,13 @@ const WithdrawalPage = () => {
             </div>
             
             <div>
-              <Label htmlFor="payment-method">Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="w-full mt-1">
-                  <SelectValue placeholder="Select payment method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="paytm">Paytm</SelectItem>
-                  <SelectItem value="bank">Bank Transfer</SelectItem>
-                  <SelectItem value="paypal">PayPal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="payment-detail">
-                {paymentMethod === 'upi' ? 'UPI ID' : 
-                 paymentMethod === 'paytm' ? 'Paytm Number' : 
-                 paymentMethod === 'bank' ? 'Bank Account Details' : 'PayPal Email'}
-              </Label>
+              <Label htmlFor="upi-id">UPI ID</Label>
               <Input 
-                id="payment-detail" 
-                value={paymentDetail} 
-                onChange={(e) => setPaymentDetail(e.target.value)}
-                placeholder={
-                  paymentMethod === 'upi' ? 'example@upi' : 
-                  paymentMethod === 'paytm' ? '9876543210' : 
-                  paymentMethod === 'bank' ? 'Account number, IFSC, Name' : 'email@example.com'
-                }
+                id="upi-id" 
+                type="text" 
+                value={upiId} 
+                onChange={(e) => setUpiId(e.target.value)}
+                placeholder="yourname@upi"
                 className="mt-1"
                 required
               />
@@ -295,7 +270,7 @@ const WithdrawalPage = () => {
                   </div>
                   <div className="ml-3">
                     <div className="font-medium">
-                      {withdrawal.method.toUpperCase()} Withdrawal
+                      UPI Withdrawal
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                       <Clock className="h-3 w-3 mr-1" />
