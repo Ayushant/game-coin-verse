@@ -15,9 +15,12 @@ interface Withdrawal {
   id: string;
   amount: number;
   coins_spent: number;
-  upi_id: string;
+  payment_detail: string; // Changed from upi_id to match database schema
   status: string;
   requested_at: string;
+  processed_at?: string;
+  method: string;
+  user_id: string;
 }
 
 const WithdrawalPage = () => {
@@ -132,9 +135,10 @@ const WithdrawalPage = () => {
         .insert([
           {
             user_id: user.id,
-            coins: coinAmount,
+            coins_spent: coinAmount,  // Changed from coins to coins_spent
             amount: rupeeAmount,
-            upi_id: upiId,
+            payment_detail: upiId,    // Changed from upi_id to payment_detail
+            method: 'upi',            // Added method field
             status: 'pending'
           }
         ])

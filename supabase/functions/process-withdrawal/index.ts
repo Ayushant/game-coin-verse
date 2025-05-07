@@ -120,7 +120,7 @@ serve(async (req) => {
     const payoutData = {
       id: `payout_${Math.random().toString(36).substring(2, 15)}`,
       amount: withdrawal.amount,
-      upi_id: withdrawal.upi_id,
+      upi_id: withdrawal.payment_detail, // Updated from upi_id to payment_detail
       status: "processed",
       transaction_id: `txn_${Math.random().toString(36).substring(2, 15)}`,
     };
