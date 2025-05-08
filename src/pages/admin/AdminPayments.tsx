@@ -46,6 +46,30 @@ const AdminPayments = () => {
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
+  // Define columns for the DataTable
+  const columns = [
+    { 
+      header: "User", 
+      accessorKey: "user_name" 
+    },
+    { 
+      header: "App", 
+      accessorKey: "app_name" 
+    },
+    { 
+      header: "Method", 
+      accessorKey: (row: ManualPayment) => <span className="capitalize">{row.payment_method}</span> 
+    },
+    { 
+      header: "Status", 
+      accessorKey: (row: ManualPayment) => getStatusBadge(row.status) 
+    },
+    { 
+      header: "Date", 
+      accessorKey: (row: ManualPayment) => new Date(row.submitted_at).toLocaleDateString() 
+    }
+  ];
+
   useEffect(() => {
     if (isAdmin) {
       loadPayments();
