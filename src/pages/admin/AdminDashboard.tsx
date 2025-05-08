@@ -11,9 +11,17 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { useToast } from '@/hooks/use-toast';
 import { Users, ShoppingBag, CreditCard, CircleDollarSign } from 'lucide-react';
 
+interface DashboardStats {
+  userCount: number;
+  appCount: number;
+  pendingPayments: number;
+  pendingWithdrawals: number;
+  totalCoins: number;
+}
+
 const AdminDashboard = () => {
   const { isAdmin } = useAdmin();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     userCount: 0,
     appCount: 0,
     pendingPayments: 0,
@@ -63,15 +71,14 @@ const AdminDashboard = () => {
       
       if (withdrawalError) throw withdrawalError;
       
-      // Get total coins in circulation
+      // Calculate total coins (sum of all user coins)
       const { data: coinsData, error: coinsError } = await supabase
-        .rpc('get_total_coins');
+        .from('profiles')
+        .select('coins');
       
-      if (coinsError && !coinsError.message.includes('function "get_total_coins" does not exist')) {
-        throw coinsError;
-      }
+      if (coinsError) throw coinsError;
       
-      const totalCoins = coinsData || 0;
+      const totalCoins = coinsData.reduce((sum, user) => sum + (user.coins || 0), 0);
       
       setStats({
         userCount: userCount || 0,

@@ -35,19 +35,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { FileUpload } from '@/components/ui/file-upload';
 import { ReactNode } from 'react';
 import { Loader2, Plus, Trash, Edit } from 'lucide-react';
-
-type App = {
-  id: string;
-  name: string;
-  description: string;
-  image_url: string | null;
-  download_url: string;
-  coin_price: number | null;
-  inr_price: number | null;
-  payment_method: 'coins' | 'razorpay' | 'manual' | 'free';
-  payment_instructions: string | null;
-  created_at: string;
-};
+import { App, PaymentMethod } from '@/types/app';
 
 const STORAGE_BUCKET = 'app_images';
 
@@ -66,7 +54,7 @@ const AdminApps = () => {
     download_url: '',
     coin_price: '',
     inr_price: '',
-    payment_method: 'coins',
+    payment_method: 'coins' as PaymentMethod,
     payment_instructions: '',
   });
   const [imageUrl, setImageUrl] = useState('');
@@ -105,7 +93,13 @@ const AdminApps = () => {
       
       if (error) throw error;
       
-      setApps(data);
+      // Ensure proper PaymentMethod type
+      const typedApps: App[] = data.map(app => ({
+        ...app,
+        payment_method: app.payment_method as PaymentMethod
+      }));
+      
+      setApps(typedApps);
     } catch (error) {
       console.error('Error loading apps:', error);
       toast({
@@ -168,7 +162,7 @@ const AdminApps = () => {
         image_url: imageUrl,
         coin_price: formValues.coin_price ? Number(formValues.coin_price) : null,
         inr_price: formValues.inr_price ? Number(formValues.inr_price) : null,
-        payment_method: formValues.payment_method as 'coins' | 'razorpay' | 'manual' | 'free',
+        payment_method: formValues.payment_method,
         payment_instructions: formValues.payment_method === 'manual' ? formValues.payment_instructions : null,
       };
       
@@ -480,7 +474,7 @@ const AdminApps = () => {
               <Label htmlFor="payment_method">Payment Method</Label>
               <Select
                 value={formValues.payment_method}
-                onValueChange={(value) => setFormValues({...formValues, payment_method: value})}
+                onValueChange={(value) => setFormValues({...formValues, payment_method: value as PaymentMethod})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select payment method" />

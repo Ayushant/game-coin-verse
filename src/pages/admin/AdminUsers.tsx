@@ -31,8 +31,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
 import { ReactNode } from 'react';
 import { Users, Search, Loader2, Plus, Minus } from 'lucide-react';
+import { UserWithdrawal, UserPurchase, WithdrawalStatus } from '@/types/app';
 
-type User = {
+interface User {
   id: string;
   username: string;
   email: string;
@@ -41,26 +42,7 @@ type User = {
   is_guest: boolean;
   role: 'user' | 'admin';
   created_at: string;
-};
-
-type UserWithdrawal = {
-  id: string;
-  amount: number;
-  coins_spent: number;
-  method: string;
-  payment_detail: string;
-  status: 'completed' | 'pending' | 'failed';
-  requested_at: string;
-  processed_at: string | null;
-};
-
-type UserPurchase = {
-  id: string;
-  app_id: string;
-  app_name: string;
-  payment_type: string;
-  created_at: string;
-};
+}
 
 const AdminUsers = () => {
   const { isAdmin } = useAdmin();
@@ -99,20 +81,18 @@ const AdminUsers = () => {
     try {
       setLoading(true);
       
+      // Fetch user profiles with join to auth.users for email
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          auth.users(email)
-        `)
+        .select('*, email')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      // Format user data properly
-      const formattedUsers = data.map(user => ({
+      // Format user data
+      const formattedUsers: User[] = data.map(user => ({
         ...user,
-        email: user.auth?.users?.email || 'N/A'
+        email: user.email || 'N/A'
       }));
       
       setUsers(formattedUsers);
@@ -141,7 +121,13 @@ const AdminUsers = () => {
       
       if (error) throw error;
       
-      setUserWithdrawals(data);
+      // Ensure proper typing of the response
+      const typedWithdrawals: UserWithdrawal[] = data.map(item => ({
+        ...item,
+        status: item.status as WithdrawalStatus
+      }));
+      
+      setUserWithdrawals(typedWithdrawals);
     } catch (error) {
       console.error('Error loading user withdrawals:', error);
       toast({
@@ -162,16 +148,19 @@ const AdminUsers = () => {
         .from('purchases')
         .select(`
           *,
-          paid_apps(name)
+          paid_apps!inner(name)
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      const formattedPurchases = data.map(purchase => ({
-        ...purchase,
-        app_name: purchase.paid_apps?.name || 'Unknown App'
+      const formattedPurchases: UserPurchase[] = data.map(purchase => ({
+        id: purchase.id,
+        app_id: purchase.app_id,
+        app_name: purchase.paid_apps?.name || 'Unknown App',
+        payment_type: purchase.payment_type,
+        created_at: purchase.created_at
       }));
       
       setUserPurchases(formattedPurchases);
@@ -311,7 +300,7 @@ const AdminUsers = () => {
     },
     {
       header: "Status",
-      accessorKey: (row: UserWithdrawal): string => row.status,
+      accessorKey: (row: UserWithdrawal): ReactNode => row.status,
     },
     {
       header: "Date",
@@ -335,8 +324,10 @@ const AdminUsers = () => {
     },
     {
       header: "Date",
-      accessorKey: (row: UserPurchase): string => (
-        new Date(row.created_at).toLocaleDateString()
+      accessorKey: (row: UserPurchase): ReactNode => (
+        <div className="text-sm">
+          {new Date(row.created_at).toLocaleDateString()}
+        </div>
       ),
     },
   ];

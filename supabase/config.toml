@@ -15,3 +15,9 @@ max_rows = 1000
 
 [global.admin_functions]
 verify_jwt = true
+
+[functions.process-manual-payment]
+verify_jwt = true
+
+[functions.process-withdrawal]
+verify_jwt = true

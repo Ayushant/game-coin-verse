@@ -3,240 +3,209 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { CoinDisplay } from '@/components/ui/CoinDisplay';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
-import { Wallet, ArrowRight, Download, Coins, CircleDollarSign, Store } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Loader2, ChevronRight, Download } from 'lucide-react';
 
-type Withdrawal = {
+interface GameSession {
   id: string;
-  amount: number;
-  status: string;
-  requested_at: string;
-};
+  game_name: string;
+  coins_earned: number;
+  score: number | null;
+  played_at: string;
+}
 
-type Purchase = {
+interface Purchase {
   id: string;
+  app_id: string;
   app_name: string;
   payment_type: string;
-  purchased_at: string;
-};
+  created_at: string;
+}
 
 const WalletPage = () => {
   const { user } = useAuth();
   const { getConversionRateInINR } = useAdmin();
-  const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
-  const [recentPurchases, setRecentPurchases] = useState<Purchase[]>([]);
-  const [loadingWithdrawals, setLoadingWithdrawals] = useState(true);
-  const [loadingPurchases, setLoadingPurchases] = useState(true);
+  const [gameHistory, setGameHistory] = useState<GameSession[]>([]);
+  const [purchaseHistory, setPurchaseHistory] = useState<Purchase[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && !user.isGuest) {
-      loadRecentWithdrawals();
-      loadRecentPurchases();
+    if (user) {
+      loadUserData();
     } else {
-      setLoadingWithdrawals(false);
-      setLoadingPurchases(false);
+      setLoading(false);
     }
   }, [user]);
 
-  const loadRecentWithdrawals = async () => {
+  const loadUserData = async () => {
     try {
-      setLoadingWithdrawals(true);
+      setLoading(true);
       
-      const { data, error } = await supabase
-        .from('withdrawals')
-        .select('id, amount, status, requested_at')
-        .eq('user_id', user?.id)
-        .order('requested_at', { ascending: false })
-        .limit(5);
+      // Get game history
+      const { data: gameData, error: gameError } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('played_at', { ascending: false })
+        .limit(10);
         
-      if (error) throw error;
+      if (gameError) throw gameError;
       
-      setRecentWithdrawals(data || []);
-    } catch (error) {
-      console.error('Error loading withdrawals:', error);
-    } finally {
-      setLoadingWithdrawals(false);
-    }
-  };
-
-  const loadRecentPurchases = async () => {
-    try {
-      setLoadingPurchases(true);
-      
-      const { data, error } = await supabase
+      // Get purchase history with app names
+      const { data: purchasesData, error: purchasesError } = await supabase
         .from('purchases')
         .select(`
-          id, 
-          payment_type,
-          created_at,
-          paid_apps:app_id (name)
+          *,
+          paid_apps!inner(name)
         `)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
-        
-      if (error) throw error;
+        .limit(10);
+
+      if (purchasesError) throw purchasesError;
       
-      const formattedPurchases = data.map(item => ({
-        id: item.id,
-        app_name: item.paid_apps?.name || 'Unknown App',
-        payment_type: item.payment_type,
-        purchased_at: item.created_at,
+      const formattedPurchases: Purchase[] = purchasesData.map(purchase => ({
+        id: purchase.id,
+        app_id: purchase.app_id,
+        app_name: purchase.paid_apps.name,
+        payment_type: purchase.payment_type,
+        created_at: purchase.created_at
       }));
       
-      setRecentPurchases(formattedPurchases);
+      setGameHistory(gameData || []);
+      setPurchaseHistory(formattedPurchases || []);
     } catch (error) {
-      console.error('Error loading purchases:', error);
+      console.error('Error loading wallet data:', error);
     } finally {
-      setLoadingPurchases(false);
+      setLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-500';
-      case 'pending':
-        return 'text-yellow-500';
-      case 'failed':
-        return 'text-red-500';
-      default:
-        return 'text-gray-500';
-    }
-  };
+  if (!user) {
+    return (
+      <div className="p-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">Wallet</h1>
+        <p className="mb-4">Please log in to view your wallet.</p>
+        <Link to="/login">
+          <Button>Log In</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">Your Wallet</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">My Wallet</h1>
+        {user.coins > 0 && (
+          <Link to="/withdraw">
+            <Button>Withdraw Coins</Button>
+          </Link>
+        )}
+      </div>
       
-      <div className="bg-gradient-to-r from-game-purple to-game-purple-dark rounded-xl p-5 mb-6 shadow-lg relative overflow-hidden text-white">
-        <div className="absolute top-0 right-0 opacity-10">
-          <Coins className="w-40 h-40 -mt-8 -mr-8" />
-        </div>
-        <div className="flex items-center mb-4">
-          <Wallet className="h-6 w-6 mr-2" />
-          <h2 className="text-xl font-semibold">Your Balance</h2>
-        </div>
-        <div className="mb-2">
-          <p className="text-3xl font-bold">{user?.coins || 0}</p>
-          <p className="text-sm opacity-80">Coins</p>
-        </div>
-        <div className="mt-4">
-          {user?.isGuest ? (
-            <p className="text-xs opacity-80">Sign up to withdraw coins</p>
-          ) : (
-            <p className="text-xs opacity-80">
-              Estimated value: ₹{getConversionRateInINR(user?.coins || 0)}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Your Balance</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center">
+          <CoinDisplay coins={user.coins} size="lg" />
+          {getConversionRateInINR && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              ≈ ₹{getConversionRateInINR(user.coins)}
             </p>
           )}
-        </div>
-        <div className="mt-5 space-x-3">
-          {!user?.isGuest && (
-            <Button 
-              variant="secondary"
-              className="bg-white/20 hover:bg-white/30 text-white"
-              asChild
-            >
-              <Link to="/withdraw">
-                Withdraw <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-          )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Withdrawals</CardTitle>
-            <CardDescription>Your recent withdrawal requests</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingWithdrawals ? (
-              <p className="text-center py-4 text-muted-foreground">Loading...</p>
-            ) : recentWithdrawals.length > 0 ? (
-              <ul className="space-y-3">
-                {recentWithdrawals.map((withdrawal) => (
-                  <li key={withdrawal.id} className="flex justify-between items-center border-b pb-2">
+      <Tabs defaultValue="games">
+        <TabsList className="w-full mb-4">
+          <TabsTrigger value="games" className="flex-1">Game History</TabsTrigger>
+          <TabsTrigger value="purchases" className="flex-1">Purchases</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="games">
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : gameHistory.length > 0 ? (
+            <div className="space-y-3">
+              {gameHistory.map((session) => (
+                <Card key={session.id}>
+                  <CardContent className="p-4 flex justify-between items-center">
                     <div>
-                      <p className="font-medium">₹{withdrawal.amount}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(withdrawal.requested_at)}</p>
+                      <p className="font-medium">{session.game_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(session.played_at).toLocaleString()}
+                      </p>
+                      {session.score !== null && (
+                        <p className="text-sm">Score: {session.score}</p>
+                      )}
                     </div>
-                    <span className={`capitalize ${getStatusColor(withdrawal.status)}`}>
-                      {withdrawal.status}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-center py-4 text-muted-foreground">
-                {user?.isGuest 
-                  ? "Sign up to withdraw coins" 
-                  : "No withdrawal history"}
-              </p>
-            )}
-          </CardContent>
-          <CardFooter>
-            {!user?.isGuest && (
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/withdraw">
-                  <CircleDollarSign className="w-4 h-4 mr-2" /> 
-                  Withdraw Funds
-                </Link>
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Purchases</CardTitle>
-            <CardDescription>Your recent app purchases</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingPurchases ? (
-              <p className="text-center py-4 text-muted-foreground">Loading...</p>
-            ) : recentPurchases.length > 0 ? (
-              <ul className="space-y-3">
-                {recentPurchases.map((purchase) => (
-                  <li key={purchase.id} className="flex justify-between items-center border-b pb-2">
+                    <div className="flex items-center">
+                      <CoinDisplay coins={session.coins_earned} />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">
+              No game history found. Play games to earn coins!
+            </p>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="purchases">
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : purchaseHistory.length > 0 ? (
+            <div className="space-y-3">
+              {purchaseHistory.map((purchase) => (
+                <Card key={purchase.id}>
+                  <CardContent className="p-4 flex justify-between items-center">
                     <div>
                       <p className="font-medium">{purchase.app_name}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(purchase.purchased_at)}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="capitalize">
+                          {purchase.payment_type}
+                        </Badge>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(purchase.created_at).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <span className="capitalize text-sm">
-                      {purchase.payment_type}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-center py-4 text-muted-foreground">No purchase history</p>
-            )}
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/store">
-                <Store className="w-4 h-4 mr-2" /> 
-                Visit App Store
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+                    <Link to={`/store/app/${purchase.app_id}`}>
+                      <Button size="sm" variant="ghost">
+                        <Download className="h-4 w-4 mr-1" /> Download
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">
+              No purchases found. Visit the <Link to="/store" className="text-primary hover:underline">app store</Link> to buy apps!
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

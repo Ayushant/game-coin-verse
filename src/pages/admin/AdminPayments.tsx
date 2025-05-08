@@ -22,22 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
 import { ReactNode } from 'react';
-
-type Payment = {
-  id: string;
-  user_id: string;
-  app_id: string;
-  payment_proof_url: string | null;
-  user_note: string | null;
-  payment_method: string;
-  status: 'pending' | 'approved' | 'rejected';
-  submitted_at: string;
-  verified_at: string | null;
-  verified_by: string | null;
-  user_name: string;
-  user_email: string;
-  app_name: string;
-};
+import { Payment, PaymentStatus } from '@/types/app';
 
 const AdminPayments = () => {
   const { isAdmin } = useAdmin();
@@ -69,8 +54,18 @@ const AdminPayments = () => {
         
       if (error) throw error;
       
-      const formattedPayments = data.map(item => ({
-        ...item,
+      // Process the data to ensure type safety
+      const formattedPayments: Payment[] = data.map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        app_id: item.app_id,
+        payment_proof_url: item.payment_proof_url,
+        user_note: item.user_note,
+        payment_method: item.payment_method,
+        status: item.status as PaymentStatus,
+        submitted_at: item.submitted_at,
+        verified_at: item.verified_at,
+        verified_by: item.verified_by,
         user_name: item.profiles?.username || 'Unknown User',
         user_email: item.profiles?.email || 'Unknown',
         app_name: item.paid_apps?.name || 'Unknown App',
@@ -94,7 +89,7 @@ const AdminPayments = () => {
     setDialogOpen(true);
   };
 
-  const processPayment = async (status: 'approved' | 'rejected') => {
+  const processPayment = async (status: PaymentStatus) => {
     if (!selectedPayment) return;
     
     try {
@@ -148,7 +143,7 @@ const AdminPayments = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: PaymentStatus) => {
     switch (status) {
       case 'pending':
         return <Badge className="bg-yellow-500">Pending</Badge>;

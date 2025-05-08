@@ -13,18 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-
-type App = {
-  id: string;
-  name: string;
-  description: string;
-  image_url: string | null;
-  coin_price: number | null;
-  inr_price: number | null;
-  payment_method: 'coins' | 'razorpay' | 'manual' | 'free';
-  created_at: string;
-  is_purchased?: boolean;
-};
+import { App, PaymentMethod } from '@/types/app';
 
 const AppStorePage = () => {
   const { user } = useAuth();
@@ -75,14 +64,21 @@ const AppStorePage = () => {
         
         const appsWithPurchaseStatus = appsData.map(app => ({
           ...app,
+          payment_method: app.payment_method as PaymentMethod,
           is_purchased: purchasedAppIds.includes(app.id)
         }));
         
-        setApps(appsWithPurchaseStatus);
-        setFilteredApps(appsWithPurchaseStatus);
+        setApps(appsWithPurchaseStatus as App[]);
+        setFilteredApps(appsWithPurchaseStatus as App[]);
       } else {
-        setApps(appsData);
-        setFilteredApps(appsData);
+        setApps(appsData.map(app => ({
+          ...app,
+          payment_method: app.payment_method as PaymentMethod
+        })) as App[]);
+        setFilteredApps(appsData.map(app => ({
+          ...app,
+          payment_method: app.payment_method as PaymentMethod
+        })) as App[]);
       }
     } catch (error) {
       console.error('Error loading apps:', error);
