@@ -43,33 +43,48 @@ const AdminPayments = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // Fetch payments and manually fetch related data to avoid join issues
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('manual_payments')
-        .select(`
-          *,
-          profiles:user_id (username, email),
-          paid_apps:app_id (name)
-        `)
+        .select('*')
         .order('submitted_at', { ascending: false });
         
-      if (error) throw error;
+      if (paymentsError) throw paymentsError;
       
-      // Process the data to ensure type safety
-      const formattedPayments: Payment[] = data.map(item => ({
-        id: item.id,
-        user_id: item.user_id,
-        app_id: item.app_id,
-        payment_proof_url: item.payment_proof_url,
-        user_note: item.user_note,
-        payment_method: item.payment_method,
-        status: item.status as PaymentStatus,
-        submitted_at: item.submitted_at,
-        verified_at: item.verified_at,
-        verified_by: item.verified_by,
-        user_name: item.profiles?.username || 'Unknown User',
-        user_email: item.profiles?.email || 'Unknown',
-        app_name: item.paid_apps?.name || 'Unknown App',
-      }));
+      // Process the payment data
+      const formattedPayments: Payment[] = [];
+      
+      for (const payment of paymentsData || []) {
+        // Get user details
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('username, email')
+          .eq('id', payment.user_id)
+          .single();
+          
+        // Get app details
+        const { data: appData, error: appError } = await supabase
+          .from('paid_apps')
+          .select('name')
+          .eq('id', payment.app_id)
+          .single();
+          
+        formattedPayments.push({
+          id: payment.id,
+          user_id: payment.user_id,
+          app_id: payment.app_id,
+          payment_proof_url: payment.payment_proof_url,
+          user_note: payment.user_note,
+          payment_method: payment.payment_method,
+          status: payment.status as PaymentStatus,
+          submitted_at: payment.submitted_at,
+          verified_at: payment.verified_at,
+          verified_by: payment.verified_by,
+          user_name: userData?.username || 'Unknown User',
+          user_email: userData?.email || 'Unknown',
+          app_name: appData?.name || 'Unknown App',
+        });
+      }
       
       setPayments(formattedPayments);
     } catch (error) {

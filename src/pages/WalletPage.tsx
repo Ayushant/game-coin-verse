@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -12,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { CoinDisplay } from '@/components/ui/CoinDisplay';
+import CoinDisplay from '@/components/ui/CoinDisplay'; // Fixed import
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -121,7 +120,7 @@ const WalletPage = () => {
           <CardTitle>Your Balance</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
-          <CoinDisplay coins={user.coins} size="lg" />
+          <CoinDisplay size="lg" /> {/* Fixed component usage */}
           {getConversionRateInINR && (
             <p className="mt-2 text-sm text-muted-foreground">
               ≈ ₹{getConversionRateInINR(user.coins)}

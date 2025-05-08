@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-interface DataTableProps<T> {
+interface DataTableProps<T extends Record<string, any>> {
   columns: {
     header: string;
     accessorKey: keyof T | ((row: T) => React.ReactNode);
@@ -23,7 +23,7 @@ interface DataTableProps<T> {
   className?: string;
 }
 
-export function DataTable<T>({
+export function DataTable<T extends Record<string, any>>({
   columns,
   data,
   onRowClick,

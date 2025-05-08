@@ -49,29 +49,37 @@ const AdminWithdrawals = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // Fetch withdrawals and manually fetch related data to avoid join issues
+      const { data: withdrawalsData, error: withdrawalsError } = await supabase
         .from('withdrawals')
-        .select(`
-          *,
-          profiles:user_id (username, email)
-        `)
+        .select('*')
         .order('requested_at', { ascending: false });
       
-      if (error) throw error;
+      if (withdrawalsError) throw withdrawalsError;
       
-      const formattedWithdrawals: Withdrawal[] = data.map(item => ({
-        id: item.id,
-        user_id: item.user_id,
-        amount: item.amount,
-        coins_spent: item.coins_spent,
-        method: item.method,
-        payment_detail: item.payment_detail,
-        status: item.status as WithdrawalStatus,
-        requested_at: item.requested_at,
-        processed_at: item.processed_at,
-        user_name: item.profiles?.username || 'Unknown User',
-        user_email: item.profiles?.email || 'Unknown',
-      }));
+      // Process the withdrawal data
+      const formattedWithdrawals: Withdrawal[] = [];
+      
+      for (const withdrawal of withdrawalsData || []) {
+        // Get user details
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', withdrawal.user_id)
+          .single();
+          
+        // Get user email from auth
+        const { data: authData, error: authError } = await supabase.auth.admin.getUserById(
+          withdrawal.user_id
+        );
+        
+        formattedWithdrawals.push({
+          ...withdrawal,
+          status: withdrawal.status as WithdrawalStatus,
+          user_name: userData?.username || 'Unknown User',
+          user_email: authData?.user?.email || 'Unknown',
+        });
+      }
       
       setWithdrawals(formattedWithdrawals);
     } catch (error) {
@@ -170,11 +178,11 @@ const AdminWithdrawals = () => {
     },
     {
       header: "Coins Spent",
-      accessorKey: "coins_spent",
+      accessorKey: (row: Withdrawal): ReactNode => row.coins_spent,
     },
     {
       header: "Method",
-      accessorKey: "method",
+      accessorKey: (row: Withdrawal): ReactNode => row.method,
     },
     {
       header: "Status",

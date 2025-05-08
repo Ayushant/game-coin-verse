@@ -81,19 +81,28 @@ const AdminUsers = () => {
     try {
       setLoading(true);
       
-      // Fetch user profiles with join to auth.users for email
-      const { data, error } = await supabase
+      // Get profiles data
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('*, email')
+        .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (profilesError) throw profilesError;
       
-      // Format user data
-      const formattedUsers: User[] = data.map(user => ({
-        ...user,
-        email: user.email || 'N/A'
-      }));
+      // Fetch emails for each profile
+      const formattedUsers: User[] = [];
+      
+      for (const profile of profilesData || []) {
+        // Get user auth data for email
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
+          profile.id
+        );
+        
+        formattedUsers.push({
+          ...profile,
+          email: userData?.user?.email || 'N/A'
+        });
+      }
       
       setUsers(formattedUsers);
       setFilteredUsers(formattedUsers);
@@ -258,8 +267,7 @@ const AdminUsers = () => {
     },
     {
       header: "Coins",
-      accessorKey: "coins",
-      className: "text-right",
+      accessorKey: (row: User): ReactNode => row.coins,
     },
     {
       header: "Joined",
@@ -291,12 +299,11 @@ const AdminUsers = () => {
     },
     {
       header: "Coins Spent",
-      accessorKey: "coins_spent",
-      className: "text-right",
+      accessorKey: (row: UserWithdrawal): ReactNode => row.coins_spent,
     },
     {
       header: "Method",
-      accessorKey: "method",
+      accessorKey: (row: UserWithdrawal): ReactNode => row.method,
     },
     {
       header: "Status",
@@ -315,12 +322,11 @@ const AdminUsers = () => {
   const purchaseColumns = [
     {
       header: "App",
-      accessorKey: "app_name",
+      accessorKey: (row: UserPurchase): ReactNode => row.app_name,
     },
     {
       header: "Payment Type",
-      accessorKey: "payment_type",
-      className: "capitalize",
+      accessorKey: (row: UserPurchase): ReactNode => row.payment_type,
     },
     {
       header: "Date",

@@ -7,12 +7,14 @@ interface CoinDisplayProps {
   showBalance?: boolean;
   showTooltip?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  coins?: number; // Added optional coins prop
 }
 
 const CoinDisplay = ({ 
   showBalance = true, 
   showTooltip = true,
-  size = 'md'
+  size = 'md',
+  coins
 }: CoinDisplayProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -20,11 +22,14 @@ const CoinDisplay = ({
 
   if (!user) return null;
 
+  // Use passed coins prop if provided, otherwise use user.coins
+  const coinAmount = typeof coins !== 'undefined' ? coins : user.coins;
+
   const handleCoinDisplay = () => {
     if (showTooltip) {
       toast({
         title: "Coin Balance",
-        description: `Your current balance is ${user.coins} coins.`,
+        description: `Your current balance is ${coinAmount} coins.`,
       });
     }
   };
@@ -60,7 +65,7 @@ const CoinDisplay = ({
         <circle cx="12" cy="12" r="8" fill="#FFD54F" />
         <circle cx="12" cy="12" r="4" fill="#FFE082" />
       </svg>
-      {showBalance && <span className={`font-medium ${textSizeClasses[size]} text-white`}>{user.coins}</span>}
+      {showBalance && <span className={`font-medium ${textSizeClasses[size]} text-white`}>{coinAmount}</span>}
     </div>
   );
 };
