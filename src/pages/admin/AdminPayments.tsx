@@ -21,6 +21,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
+import { ReactNode } from 'react';
 
 type Payment = {
   id: string;
@@ -163,7 +164,7 @@ const AdminPayments = () => {
   const columns = [
     {
       header: "User",
-      accessorKey: (row: Payment) => (
+      accessorKey: (row: Payment): ReactNode => (
         <div>
           <div className="font-medium">{row.user_name}</div>
           <div className="text-sm text-muted-foreground">{row.user_email}</div>
@@ -172,16 +173,17 @@ const AdminPayments = () => {
     },
     {
       header: "App",
-      accessorKey: "app_name",
+      accessorKey: (row: Payment): ReactNode => row.app_name,
     },
     {
       header: "Method",
-      accessorKey: "payment_method",
-      className: "capitalize",
+      accessorKey: (row: Payment): ReactNode => (
+        <span className="capitalize">{row.payment_method}</span>
+      ),
     },
     {
       header: "Submitted",
-      accessorKey: (row: Payment) => (
+      accessorKey: (row: Payment): ReactNode => (
         <div className="text-sm">
           {new Date(row.submitted_at).toLocaleString()}
         </div>
@@ -189,11 +191,11 @@ const AdminPayments = () => {
     },
     {
       header: "Status",
-      accessorKey: (row: Payment) => getStatusBadge(row.status),
+      accessorKey: (row: Payment): ReactNode => getStatusBadge(row.status),
     },
     {
       header: "Actions",
-      accessorKey: (row: Payment) => (
+      accessorKey: (row: Payment): ReactNode => (
         <Button 
           size="sm" 
           onClick={(e) => {

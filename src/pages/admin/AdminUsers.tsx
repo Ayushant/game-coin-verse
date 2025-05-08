@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -235,7 +235,7 @@ const AdminUsers = () => {
   const columns = [
     {
       header: "User",
-      accessorKey: (row: UserProfile) => (
+      accessorKey: (row: UserProfile): ReactNode => (
         <div>
           <div className="font-medium">{row.username}</div>
           <div className="text-sm text-muted-foreground">{row.email}</div>
@@ -244,19 +244,19 @@ const AdminUsers = () => {
     },
     {
       header: "Coins",
-      accessorKey: (row: UserProfile) => (
+      accessorKey: (row: UserProfile): ReactNode => (
         <div className="font-medium">{row.coins || 0}</div>
       ),
     },
     {
       header: "Role",
-      accessorKey: (row: UserProfile) => (
+      accessorKey: (row: UserProfile): ReactNode => (
         <div className="capitalize">{row.role || 'user'}</div>
       ),
     },
     {
       header: "Joined",
-      accessorKey: (row: UserProfile) => (
+      accessorKey: (row: UserProfile): ReactNode => (
         <div className="text-sm">
           {row.created_at ? new Date(row.created_at).toLocaleDateString() : 'N/A'}
         </div>
@@ -264,7 +264,7 @@ const AdminUsers = () => {
     },
     {
       header: "Actions",
-      accessorKey: (row: UserProfile) => (
+      accessorKey: (row: UserProfile): ReactNode => (
         <Button 
           size="sm" 
           onClick={(e) => {
@@ -281,18 +281,19 @@ const AdminUsers = () => {
   const withdrawalsColumns = [
     {
       header: "Amount",
-      accessorKey: (row: UserWithdrawal) => (
+      accessorKey: (row: UserWithdrawal): ReactNode => (
         <div className="font-medium">₹{row.amount}</div>
       ),
     },
     {
       header: "Status",
-      accessorKey: "status",
-      className: "capitalize",
+      accessorKey: (row: UserWithdrawal): ReactNode => (
+        <span className="capitalize">{row.status}</span>
+      ),
     },
     {
       header: "Requested",
-      accessorKey: (row: UserWithdrawal) => (
+      accessorKey: (row: UserWithdrawal): ReactNode => (
         new Date(row.requested_at).toLocaleDateString()
       ),
     },
@@ -301,16 +302,17 @@ const AdminUsers = () => {
   const purchasesColumns = [
     {
       header: "App",
-      accessorKey: "app_name",
+      accessorKey: (row: UserPurchase): ReactNode => row.app_name,
     },
     {
       header: "Payment Type",
-      accessorKey: "payment_type",
-      className: "capitalize",
+      accessorKey: (row: UserPurchase): ReactNode => (
+        <span className="capitalize">{row.payment_type}</span>
+      ),
     },
     {
       header: "Date",
-      accessorKey: (row: UserPurchase) => (
+      accessorKey: (row: UserPurchase): ReactNode => (
         new Date(row.purchased_at).toLocaleDateString()
       ),
     },
