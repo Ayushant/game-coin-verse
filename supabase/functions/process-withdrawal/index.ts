@@ -1,171 +1,105 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Follow this setup guide to integrate the Deno runtime and the Supabase
+// JavaScript SDK with your Supabase project: https://deno.land/guides/supabase
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.14.0'
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Handle CORS preflight requests
-const handleCors = (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: corsHeaders,
-      status: 204,
-    });
-  }
-  return null;
-};
-
 serve(async (req) => {
-  // Handle CORS
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
-    // Create authenticated Supabase client
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
-    
-    // Get the current client's authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+
+    // Get request body
+    const { withdrawalId, status } = await req.json();
+
+    if (!withdrawalId || !status) {
       return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-    
-    // Extract JWT token
-    const token = authHeader.replace("Bearer ", "");
-    
-    // Verify the JWT
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized request" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-    
-    // Only handle POST requests
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ error: "Method not allowed" }),
-        {
-          status: 405,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-    
-    // Parse request body
-    const { withdrawalId } = await req.json();
-    
-    if (!withdrawalId) {
-      return new Response(
-        JSON.stringify({ error: "Missing withdrawal ID" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-    
-    // Get withdrawal details
-    const { data: withdrawal, error: fetchError } = await supabaseClient
-      .from("withdrawals")
-      .select("*")
-      .eq("id", withdrawalId)
-      .eq("status", "pending")
-      .single();
-    
-    if (fetchError || !withdrawal) {
-      return new Response(
-        JSON.stringify({ error: "Withdrawal not found or already processed" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-    
-    // Verify user owns this withdrawal
-    if (withdrawal.user_id !== user.id) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized access to withdrawal" }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Withdrawal ID and status are required" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // In a production system, you would call the payout API here
-    // For example with Razorpay Payouts or Cashfree Payouts
-    
-    // This is where you would make the actual API call to Razorpay/Cashfree
-    // For this example, we'll simulate a successful payout
-    const payoutSuccessful = true;
-    const payoutData = {
-      id: `payout_${Math.random().toString(36).substring(2, 15)}`,
-      amount: withdrawal.amount,
-      upi_id: withdrawal.payment_detail, // Updated from upi_id to payment_detail
-      status: "processed",
-      transaction_id: `txn_${Math.random().toString(36).substring(2, 15)}`,
-    };
-    
-    // Update withdrawal status based on payout result
-    const status = payoutSuccessful ? "completed" : "failed";
-    const processed_at = new Date().toISOString();
-    
-    const { error: updateError } = await supabaseClient
-      .from("withdrawals")
-      .update({ 
-        status,
-        processed_at,
-      })
-      .eq("id", withdrawalId);
-      
-    if (updateError) {
+    // Validate status
+    if (status !== 'completed' && status !== 'failed') {
       return new Response(
-        JSON.stringify({ error: "Failed to update withdrawal status", details: updateError }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Status must be 'completed' or 'failed'" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        status,
-        payout: payoutData,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+    // 1. Get withdrawal details
+    const { data: withdrawalData, error: withdrawalError } = await supabaseClient
+      .from("withdrawals")
+      .select("*")
+      .eq("id", withdrawalId)
+      .single();
+
+    if (withdrawalError) {
+      throw withdrawalError;
+    }
+
+    // 2. Update withdrawal status
+    const { error: updateError } = await supabaseClient
+      .from("withdrawals")
+      .update({
+        status: status,
+        processed_at: new Date().toISOString()
+      })
+      .eq("id", withdrawalId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // 3. If rejection, refund the coins to user
+    if (status === 'failed') {
+      // Get user's current coins
+      const { data: userData, error: userError } = await supabaseClient
+        .from("profiles")
+        .select("coins")
+        .eq("id", withdrawalData.user_id)
+        .single();
+      
+      if (userError) {
+        throw userError;
       }
+
+      // Update user's coins (refund)
+      const { error: refundError } = await supabaseClient
+        .from("profiles")
+        .update({
+          coins: userData.coins + withdrawalData.coins_spent
+        })
+        .eq("id", withdrawalData.user_id);
+      
+      if (refundError) {
+        throw refundError;
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, message: `Withdrawal ${status === 'completed' ? 'approved' : 'rejected'} successfully` }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-    
   } catch (error) {
+    console.error("Error processing withdrawal:", error);
+    
     return new Response(
-      JSON.stringify({ error: "Server error", details: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
-});
+})

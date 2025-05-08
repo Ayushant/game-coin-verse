@@ -27,8 +27,8 @@ type Payment = {
   id: string;
   user_id: string;
   app_id: string;
-  payment_proof_url: string;
-  user_note: string;
+  payment_proof_url: string | null;
+  user_note: string | null;
   payment_method: string;
   status: 'pending' | 'approved' | 'rejected';
   submitted_at: string;

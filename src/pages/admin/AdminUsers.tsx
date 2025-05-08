@@ -1,5 +1,5 @@
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -24,47 +25,56 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
-import { Search } from 'lucide-react';
+import { ReactNode } from 'react';
+import { Users, Search, Loader2, Plus, Minus } from 'lucide-react';
 
-type UserProfile = {
+type User = {
   id: string;
   username: string;
   email: string;
-  coins: number;
-  role: 'user' | 'admin' | null;
-  created_at: string;
   avatar_url: string | null;
+  coins: number;
+  is_guest: boolean;
+  role: 'user' | 'admin';
+  created_at: string;
 };
 
 type UserWithdrawal = {
   id: string;
   amount: number;
-  status: string;
+  coins_spent: number;
+  method: string;
+  payment_detail: string;
+  status: 'completed' | 'pending' | 'failed';
   requested_at: string;
+  processed_at: string | null;
 };
 
 type UserPurchase = {
   id: string;
+  app_id: string;
   app_name: string;
   payment_type: string;
-  purchased_at: string;
+  created_at: string;
 };
 
 const AdminUsers = () => {
   const { isAdmin } = useAdmin();
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userWithdrawals, setUserWithdrawals] = useState<UserWithdrawal[]>([]);
   const [userPurchases, setUserPurchases] = useState<UserPurchase[]>([]);
-  const [userWithdrawalsLoading, setUserWithdrawalsLoading] = useState(false);
-  const [userPurchasesLoading, setUserPurchasesLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [coinAdjustment, setCoinAdjustment] = useState(0);
+  const [adjustingCoins, setAdjustingCoins] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,31 +84,35 @@ const AdminUsers = () => {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (searchTerm) {
+    if (searchQuery) {
       const filtered = users.filter(user => 
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       setFilteredUsers(filtered);
     } else {
       setFilteredUsers(users);
     }
-  }, [searchTerm, users]);
+  }, [searchQuery, users]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       
-      const { data: profiles, error: profilesError } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('*');
-        
-      if (profilesError) throw profilesError;
+        .select(`
+          *,
+          auth.users(email)
+        `)
+        .order('created_at', { ascending: false });
       
-      // Get emails from auth.users using service role (would need admin rights)
-      const formattedUsers = profiles.map(profile => ({
-        ...profile,
-        email: profile.email || 'Anonymous',
+      if (error) throw error;
+      
+      // Format user data properly
+      const formattedUsers = data.map(user => ({
+        ...user,
+        email: user.auth?.users?.email || 'N/A'
       }));
       
       setUsers(formattedUsers);
@@ -117,17 +131,17 @@ const AdminUsers = () => {
 
   const loadUserWithdrawals = async (userId: string) => {
     try {
-      setUserWithdrawalsLoading(true);
+      setLoadingDetails(true);
       
       const { data, error } = await supabase
         .from('withdrawals')
         .select('*')
         .eq('user_id', userId)
         .order('requested_at', { ascending: false });
-        
+      
       if (error) throw error;
       
-      setUserWithdrawals(data || []);
+      setUserWithdrawals(data);
     } catch (error) {
       console.error('Error loading user withdrawals:', error);
       toast({
@@ -136,30 +150,28 @@ const AdminUsers = () => {
         variant: 'destructive',
       });
     } finally {
-      setUserWithdrawalsLoading(false);
+      setLoadingDetails(false);
     }
   };
 
   const loadUserPurchases = async (userId: string) => {
     try {
-      setUserPurchasesLoading(true);
+      setLoadingDetails(true);
       
       const { data, error } = await supabase
         .from('purchases')
         .select(`
           *,
-          paid_apps:app_id (name)
+          paid_apps(name)
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-        
+      
       if (error) throw error;
       
-      const formattedPurchases = data.map(item => ({
-        id: item.id,
-        app_name: item.paid_apps?.name || 'Unknown App',
-        payment_type: item.payment_type,
-        purchased_at: item.created_at,
+      const formattedPurchases = data.map(purchase => ({
+        ...purchase,
+        app_name: purchase.paid_apps?.name || 'Unknown App'
       }));
       
       setUserPurchases(formattedPurchases);
@@ -171,114 +183,117 @@ const AdminUsers = () => {
         variant: 'destructive',
       });
     } finally {
-      setUserPurchasesLoading(false);
+      setLoadingDetails(false);
     }
   };
 
-  const handleViewUser = async (user: UserProfile) => {
+  const handleUserClick = (user: User) => {
     setSelectedUser(user);
+    loadUserWithdrawals(user.id);
+    loadUserPurchases(user.id);
     setDialogOpen(true);
-    
-    // Load user details
-    await Promise.all([
-      loadUserWithdrawals(user.id),
-      loadUserPurchases(user.id)
-    ]);
   };
 
-  const updateUserCoins = async (amount: number) => {
-    if (!selectedUser) return;
+  const adjustUserCoins = async () => {
+    if (!selectedUser || coinAdjustment === 0) return;
     
     try {
-      const newCoins = selectedUser.coins + amount;
+      setAdjustingCoins(true);
       
-      if (newCoins < 0) {
-        toast({
-          title: 'Invalid Amount',
-          description: 'Cannot reduce coins below zero',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      // Update user coins
-      const { error } = await supabase
+      // Update user's coins in profiles table
+      const { error: updateError } = await supabase
         .from('profiles')
-        .update({ coins: newCoins })
+        .update({ coins: selectedUser.coins + coinAdjustment })
         .eq('id', selectedUser.id);
-        
-      if (error) throw error;
-
-      // Update local state
-      const updatedUser = { ...selectedUser, coins: newCoins };
-      setSelectedUser(updatedUser);
       
-      // Update users list
+      if (updateError) throw updateError;
+      
+      // Create a record in the rewards table
+      const { error: rewardError } = await supabase
+        .from('rewards')
+        .insert({
+          user_id: selectedUser.id,
+          coins: coinAdjustment,
+          action: 'admin_adjustment',
+        });
+      
+      if (rewardError) throw rewardError;
+      
+      // Update local state
       setUsers(users.map(user => 
-        user.id === selectedUser.id ? updatedUser : user
+        user.id === selectedUser.id
+          ? { ...user, coins: user.coins + coinAdjustment }
+          : user
       ));
-
+      
+      setSelectedUser({
+        ...selectedUser,
+        coins: selectedUser.coins + coinAdjustment
+      });
+      
+      setCoinAdjustment(0);
+      
       toast({
-        title: 'Coins Updated',
-        description: `${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} coins`,
+        title: 'Coins Adjusted',
+        description: `${Math.abs(coinAdjustment)} coins ${coinAdjustment > 0 ? 'added to' : 'deducted from'} ${selectedUser.username}'s account`,
       });
     } catch (error) {
-      console.error('Error updating coins:', error);
+      console.error('Error adjusting user coins:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update user coins',
+        description: 'Failed to adjust coins',
         variant: 'destructive',
       });
+    } finally {
+      setAdjustingCoins(false);
     }
   };
 
-  const columns = [
+  const userColumns = [
     {
       header: "User",
-      accessorKey: (row: UserProfile): ReactNode => (
+      accessorKey: (row: User): ReactNode => (
         <div>
           <div className="font-medium">{row.username}</div>
-          <div className="text-sm text-muted-foreground">{row.email}</div>
+          <div className="text-xs text-muted-foreground">{row.email}</div>
         </div>
       ),
     },
     {
-      header: "Coins",
-      accessorKey: (row: UserProfile): ReactNode => (
-        <div className="font-medium">{row.coins || 0}</div>
+      header: "Role",
+      accessorKey: (row: User): ReactNode => (
+        <Badge className={row.role === 'admin' ? 'bg-blue-500' : 'bg-gray-500'}>
+          {row.role}
+        </Badge>
       ),
     },
     {
-      header: "Role",
-      accessorKey: (row: UserProfile): ReactNode => (
-        <div className="capitalize">{row.role || 'user'}</div>
-      ),
+      header: "Coins",
+      accessorKey: "coins",
+      className: "text-right",
     },
     {
       header: "Joined",
-      accessorKey: (row: UserProfile): ReactNode => (
+      accessorKey: (row: User): ReactNode => (
         <div className="text-sm">
-          {row.created_at ? new Date(row.created_at).toLocaleDateString() : 'N/A'}
+          {new Date(row.created_at).toLocaleDateString()}
         </div>
       ),
     },
     {
       header: "Actions",
-      accessorKey: (row: UserProfile): ReactNode => (
-        <Button 
-          size="sm" 
-          onClick={(e) => {
-            e.stopPropagation();
-            handleViewUser(row);
-          }}
-        >
-          View
+      accessorKey: (row: User): ReactNode => (
+        <Button size="sm" onClick={(e) => {
+          e.stopPropagation();
+          handleUserClick(row);
+        }}>
+          Manage
         </Button>
       ),
     },
   ];
 
-  const withdrawalsColumns = [
+  const withdrawalColumns = [
     {
       header: "Amount",
       accessorKey: (row: UserWithdrawal): ReactNode => (
@@ -286,38 +301,46 @@ const AdminUsers = () => {
       ),
     },
     {
+      header: "Coins Spent",
+      accessorKey: "coins_spent",
+      className: "text-right",
+    },
+    {
+      header: "Method",
+      accessorKey: "method",
+    },
+    {
       header: "Status",
-      accessorKey: (row: UserWithdrawal): ReactNode => (
-        <span className="capitalize">{row.status}</span>
-      ),
-    },
-    {
-      header: "Requested",
-      accessorKey: (row: UserWithdrawal): ReactNode => (
-        new Date(row.requested_at).toLocaleDateString()
-      ),
-    },
-  ];
-
-  const purchasesColumns = [
-    {
-      header: "App",
-      accessorKey: (row: UserPurchase): ReactNode => row.app_name,
-    },
-    {
-      header: "Payment Type",
-      accessorKey: (row: UserPurchase): ReactNode => (
-        <span className="capitalize">{row.payment_type}</span>
-      ),
+      accessorKey: (row: UserWithdrawal): string => row.status,
     },
     {
       header: "Date",
-      accessorKey: (row: UserPurchase): ReactNode => (
-        new Date(row.purchased_at).toLocaleDateString()
+      accessorKey: (row: UserWithdrawal): ReactNode => (
+        <div className="text-sm">
+          {new Date(row.requested_at).toLocaleDateString()}
+        </div>
       ),
     },
   ];
   
+  const purchaseColumns = [
+    {
+      header: "App",
+      accessorKey: "app_name",
+    },
+    {
+      header: "Payment Type",
+      accessorKey: "payment_type",
+      className: "capitalize",
+    },
+    {
+      header: "Date",
+      accessorKey: (row: UserPurchase): string => (
+        new Date(row.created_at).toLocaleDateString()
+      ),
+    },
+  ];
+
   if (!isAdmin) {
     return <div>Access denied</div>;
   }
@@ -326,150 +349,148 @@ const AdminUsers = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">User Management</h1>
-        <p className="text-muted-foreground">View and manage all users</p>
+        <p className="text-muted-foreground">View and manage user accounts</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Users className="mr-2 h-5 w-5" />
+              <span>All Users</span>
+            </div>
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </CardTitle>
           <CardDescription>
-            View and manage user accounts
+            {filteredUsers.length} {filteredUsers.length === 1 ? 'user' : 'users'} found
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input
-              placeholder="Search users by name or email"
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
           <DataTable
-            columns={columns}
+            columns={userColumns}
             data={filteredUsers}
-            onRowClick={handleViewUser}
+            onRowClick={handleUserClick}
             isLoading={loading}
-            emptyMessage={searchTerm ? "No users match your search" : "No users found"}
+            emptyMessage="No users found"
           />
         </CardContent>
       </Card>
 
-      {selectedUser && (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>User Details</DialogTitle>
-              <DialogDescription>
-                View and manage user information
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Username</p>
-                  <p className="text-base">{selectedUser.username}</p>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          {selectedUser && (
+            <>
+              <DialogHeader>
+                <DialogTitle>User Details</DialogTitle>
+                <DialogDescription>
+                  Manage user: {selectedUser.username}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid grid-cols-3 gap-4 my-4">
+                <div className="bg-muted/50 p-4 rounded-md">
+                  <p className="text-sm font-medium text-muted-foreground">User ID</p>
+                  <p className="text-sm truncate">{selectedUser.id}</p>
                 </div>
-                <div>
+                <div className="bg-muted/50 p-4 rounded-md">
                   <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p className="text-base">{selectedUser.email}</p>
+                  <p className="text-sm truncate">{selectedUser.email}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Role</p>
-                  <p className="text-base capitalize">{selectedUser.role || 'user'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Coins</p>
-                  <p className="text-base">{selectedUser.coins || 0}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Joined</p>
-                  <p className="text-base">
-                    {selectedUser.created_at 
-                      ? new Date(selectedUser.created_at).toLocaleDateString() 
-                      : 'N/A'}
-                  </p>
+                <div className="bg-muted/50 p-4 rounded-md flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Coins</p>
+                    <p className="text-xl font-bold">{selectedUser.coins}</p>
+                  </div>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      Adjust
+                    </Button>
+                  </DialogTrigger>
                 </div>
               </div>
               
-              <div>
-                <p className="text-sm font-medium mb-2">Manage Coins</p>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => updateUserCoins(-100)}
-                  >
-                    -100
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => updateUserCoins(-10)}
-                  >
-                    -10
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => updateUserCoins(10)}
-                  >
-                    +10
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => updateUserCoins(100)}
-                  >
-                    +100
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => updateUserCoins(1000)}
-                  >
-                    +1000
-                  </Button>
+              <div className="bg-muted/50 p-4 rounded-md flex items-center justify-between mb-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Coin Adjustment</p>
+                  <div className="flex items-center mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setCoinAdjustment(prev => prev - 10)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      className="w-24 mx-2 text-center"
+                      type="number"
+                      value={coinAdjustment}
+                      onChange={(e) => setCoinAdjustment(Number(e.target.value))}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setCoinAdjustment(prev => prev + 10)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+                <Button 
+                  onClick={adjustUserCoins}
+                  disabled={coinAdjustment === 0 || adjustingCoins}
+                  variant={coinAdjustment > 0 ? "default" : "destructive"}
+                >
+                  {adjustingCoins ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    coinAdjustment > 0 ? `Add ${coinAdjustment} Coins` : `Remove ${Math.abs(coinAdjustment)} Coins`
+                  )}
+                </Button>
               </div>
               
               <Tabs defaultValue="withdrawals">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-                  <TabsTrigger value="purchases">App Purchases</TabsTrigger>
+                <TabsList className="w-full">
+                  <TabsTrigger value="withdrawals" className="flex-1">Withdrawals</TabsTrigger>
+                  <TabsTrigger value="purchases" className="flex-1">Purchases</TabsTrigger>
                 </TabsList>
-                <TabsContent value="withdrawals">
+                <TabsContent value="withdrawals" className="mt-4">
                   <DataTable
-                    columns={withdrawalsColumns}
+                    columns={withdrawalColumns}
                     data={userWithdrawals}
-                    isLoading={userWithdrawalsLoading}
+                    isLoading={loadingDetails}
                     emptyMessage="No withdrawal history"
-                    className="max-h-64 overflow-auto"
                   />
                 </TabsContent>
-                <TabsContent value="purchases">
+                <TabsContent value="purchases" className="mt-4">
                   <DataTable
-                    columns={purchasesColumns}
+                    columns={purchaseColumns}
                     data={userPurchases}
-                    isLoading={userPurchasesLoading}
+                    isLoading={loadingDetails}
                     emptyMessage="No purchase history"
-                    className="max-h-64 overflow-auto"
                   />
                 </TabsContent>
               </Tabs>
-            </div>
-            
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,131 +1,173 @@
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdmin } from '@/contexts/AdminContext';
-import { Users, ShoppingBag, CircleDollarSign, CreditCard } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Users, ShoppingBag, CreditCard, CircleDollarSign } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { isAdmin } = useAdmin();
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalApps: 0,
-    totalWithdrawals: 0,
+    userCount: 0,
+    appCount: 0,
     pendingPayments: 0,
+    pendingWithdrawals: 0,
+    totalCoins: 0,
   });
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const fetchStats = async () => {
-      // Total users
-      const { count: userCount } = await supabase
+    if (isAdmin) {
+      loadStats();
+    }
+  }, [isAdmin]);
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      
+      // Get user count
+      const { count: userCount, error: userError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
-
-      // Total apps
-      const { count: appCount } = await supabase
+      
+      if (userError) throw userError;
+      
+      // Get app count
+      const { count: appCount, error: appError } = await supabase
         .from('paid_apps')
         .select('*', { count: 'exact', head: true });
-
-      // Total withdrawals
-      const { count: withdrawalCount } = await supabase
-        .from('withdrawals')
-        .select('*', { count: 'exact', head: true });
-
-      // Pending payments
-      const { count: pendingPaymentCount } = await supabase
+      
+      if (appError) throw appError;
+      
+      // Get pending payments
+      const { count: pendingPayments, error: paymentError } = await supabase
         .from('manual_payments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
-
+      
+      if (paymentError) throw paymentError;
+      
+      // Get pending withdrawals
+      const { count: pendingWithdrawals, error: withdrawalError } = await supabase
+        .from('withdrawals')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (withdrawalError) throw withdrawalError;
+      
+      // Get total coins in circulation
+      const { data: coinsData, error: coinsError } = await supabase
+        .rpc('get_total_coins');
+      
+      if (coinsError && !coinsError.message.includes('function "get_total_coins" does not exist')) {
+        throw coinsError;
+      }
+      
+      const totalCoins = coinsData || 0;
+      
       setStats({
-        totalUsers: userCount || 0,
-        totalApps: appCount || 0,
-        totalWithdrawals: withdrawalCount || 0,
-        pendingPayments: pendingPaymentCount || 0,
+        userCount: userCount || 0,
+        appCount: appCount || 0,
+        pendingPayments: pendingPayments || 0,
+        pendingWithdrawals: pendingWithdrawals || 0,
+        totalCoins
       });
-    };
-
-    if (isAdmin) {
-      fetchStats();
+      
+    } catch (error) {
+      console.error('Error loading admin stats:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load admin statistics',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-  }, [isAdmin]);
+  };
 
   if (!isAdmin) {
     return <div>Access denied</div>;
   }
 
-  const statCards = [
-    {
-      title: "Total Users",
-      value: stats.totalUsers,
-      icon: <Users className="h-6 w-6 text-blue-500" />,
-      color: "bg-blue-50 dark:bg-blue-900/20",
-    },
-    {
-      title: "Apps Published",
-      value: stats.totalApps,
-      icon: <ShoppingBag className="h-6 w-6 text-emerald-500" />,
-      color: "bg-emerald-50 dark:bg-emerald-900/20",
-    },
-    {
-      title: "Total Withdrawals",
-      value: stats.totalWithdrawals,
-      icon: <CircleDollarSign className="h-6 w-6 text-amber-500" />,
-      color: "bg-amber-50 dark:bg-amber-900/20",
-    },
-    {
-      title: "Pending Payments",
-      value: stats.pendingPayments,
-      icon: <CreditCard className="h-6 w-6 text-rose-500" />,
-      color: "bg-rose-50 dark:bg-rose-900/20",
-    },
-  ];
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your gaming platform</p>
+    <div>
+      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatsCard 
+          title="Total Users" 
+          value={stats.userCount.toString()} 
+          icon={<Users className="h-5 w-5" />} 
+          loading={loading}
+        />
+        <StatsCard 
+          title="Apps Published" 
+          value={stats.appCount.toString()} 
+          icon={<ShoppingBag className="h-5 w-5" />} 
+          loading={loading}
+        />
+        <StatsCard 
+          title="Pending Payments" 
+          value={stats.pendingPayments.toString()} 
+          icon={<CreditCard className="h-5 w-5" />} 
+          loading={loading}
+          highlight={stats.pendingPayments > 0}
+        />
+        <StatsCard 
+          title="Pending Withdrawals" 
+          value={stats.pendingWithdrawals.toString()} 
+          icon={<CircleDollarSign className="h-5 w-5" />} 
+          loading={loading}
+          highlight={stats.pendingWithdrawals > 0}
+        />
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
-                  <p className="text-3xl font-bold">{card.value}</p>
-                </div>
-                <div className={`p-3 rounded-full ${card.color}`}>
-                  {card.icon}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Withdrawals</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">View and manage recent withdrawal requests</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Review and process recent payment requests</p>
-          </CardContent>
-        </Card>
-      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>System Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Total Coins in Circulation</p>
+              <p className="text-2xl font-bold">{loading ? '...' : stats.totalCoins.toLocaleString()}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
+  );
+};
+
+interface StatsCardProps {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  loading?: boolean;
+  highlight?: boolean;
+}
+
+const StatsCard = ({ title, value, icon, loading = false, highlight = false }: StatsCardProps) => {
+  return (
+    <Card className={highlight ? "border-yellow-400 dark:border-yellow-600" : undefined}>
+      <CardContent className="p-6 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold mt-1">{loading ? '...' : value}</p>
+        </div>
+        <div className="bg-primary/10 p-2 rounded-full">
+          {icon}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
