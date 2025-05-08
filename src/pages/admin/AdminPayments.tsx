@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
@@ -22,15 +21,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
 import { ReactNode } from 'react';
-import { Payment, PaymentStatus } from '@/types/app';
+import { Loader2, Check, X } from 'lucide-react';
+
+interface ManualPayment {
+  id: string;
+  app_id: string;
+  app_name: string;
+  user_id: string;
+  user_name: string;
+  payment_method: string;
+  payment_proof_url: string | null;
+  user_note: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  submitted_at: string;
+  verified_at: string | null;
+}
 
 const AdminPayments = () => {
   const { isAdmin } = useAdmin();
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<ManualPayment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<ManualPayment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [processingAction, setProcessingAction] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,46 +56,41 @@ const AdminPayments = () => {
     try {
       setLoading(true);
       
-      // Fetch payments and manually fetch related data to avoid join issues
+      // Fetch manual payments
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('manual_payments')
         .select('*')
         .order('submitted_at', { ascending: false });
-        
+      
       if (paymentsError) throw paymentsError;
       
-      // Process the payment data
-      const formattedPayments: Payment[] = [];
+      // Process the payments data
+      const formattedPayments: ManualPayment[] = [];
       
       for (const payment of paymentsData || []) {
-        // Get user details
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('username, email')
-          .eq('id', payment.user_id)
-          .single();
-          
         // Get app details
         const { data: appData, error: appError } = await supabase
           .from('paid_apps')
           .select('name')
           .eq('id', payment.app_id)
           .single();
-          
+        
+        if (appError) console.error('Error fetching app details:', appError);
+        
+        // Get user details - make sure we only select fields that exist in the profile table
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', payment.user_id)
+          .single();
+        
+        if (userError) console.error('Error fetching user details:', userError);
+        
         formattedPayments.push({
-          id: payment.id,
-          user_id: payment.user_id,
-          app_id: payment.app_id,
-          payment_proof_url: payment.payment_proof_url,
-          user_note: payment.user_note,
-          payment_method: payment.payment_method,
-          status: payment.status as PaymentStatus,
-          submitted_at: payment.submitted_at,
-          verified_at: payment.verified_at,
-          verified_by: payment.verified_by,
-          user_name: userData?.username || 'Unknown User',
-          user_email: userData?.email || 'Unknown',
+          ...payment,
           app_name: appData?.name || 'Unknown App',
+          user_name: userData?.username || 'Unknown User',
+          status: payment.status as 'pending' | 'approved' | 'rejected',
         });
       }
       
@@ -99,47 +107,54 @@ const AdminPayments = () => {
     }
   };
 
-  const handleViewPayment = (payment: Payment) => {
+  const handleViewPayment = (payment: ManualPayment) => {
     setSelectedPayment(payment);
     setDialogOpen(true);
   };
 
-  const processPayment = async (status: PaymentStatus) => {
+  const handlePaymentAction = async (status: 'approved' | 'rejected') => {
     if (!selectedPayment) return;
     
     try {
-      setProcessingAction(true);
+      setProcessing(true);
       
+      // Update payment status
+      const { error: updateError } = await supabase
+        .from('manual_payments')
+        .update({
+          status: status,
+          verified_at: new Date().toISOString()
+        })
+        .eq('id', selectedPayment.id);
+      
+      if (updateError) throw updateError;
+      
+      // If approved, create a purchase record
       if (status === 'approved') {
-        // Call the edge function to process the payment
-        const { error: functionError } = await supabase.functions.invoke('process-manual-payment', {
-          body: { paymentId: selectedPayment.id }
-        });
+        const { error: purchaseError } = await supabase
+          .from('purchases')
+          .insert({
+            user_id: selectedPayment.user_id,
+            app_id: selectedPayment.app_id,
+            payment_type: 'manual',
+          });
         
-        if (functionError) throw functionError;
-      } else {
-        // Simply update the payment status without creating a purchase record
-        const { error } = await supabase
-          .from('manual_payments')
-          .update({
-            status: 'rejected',
-            verified_at: new Date().toISOString(),
-            verified_by: isAdmin ? 'admin' : null
-          })
-          .eq('id', selectedPayment.id);
-          
-        if (error) throw error;
+        if (purchaseError) throw purchaseError;
       }
-
+      
       toast({
         title: 'Payment Processed',
-        description: `Payment request ${status === 'approved' ? 'approved' : 'rejected'}`,
+        description: `The payment has been ${status}`,
       });
       
       // Update local state
       setPayments(payments.map(payment => 
         payment.id === selectedPayment.id
-          ? { ...payment, status, verified_at: new Date().toISOString() }
+          ? { 
+              ...payment, 
+              status, 
+              verified_at: new Date().toISOString() 
+            }
           : payment
       ));
       
@@ -150,15 +165,15 @@ const AdminPayments = () => {
       console.error('Error processing payment:', error);
       toast({
         title: 'Error',
-        description: 'Failed to process payment request',
+        description: 'Failed to process payment',
         variant: 'destructive',
       });
     } finally {
-      setProcessingAction(false);
+      setProcessing(false);
     }
   };
 
-  const getStatusBadge = (status: PaymentStatus) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
         return <Badge className="bg-yellow-500">Pending</Badge>;
@@ -170,54 +185,6 @@ const AdminPayments = () => {
         return <Badge>{status}</Badge>;
     }
   };
-
-  const columns = [
-    {
-      header: "User",
-      accessorKey: (row: Payment): ReactNode => (
-        <div>
-          <div className="font-medium">{row.user_name}</div>
-          <div className="text-sm text-muted-foreground">{row.user_email}</div>
-        </div>
-      ),
-    },
-    {
-      header: "App",
-      accessorKey: (row: Payment): ReactNode => row.app_name,
-    },
-    {
-      header: "Method",
-      accessorKey: (row: Payment): ReactNode => (
-        <span className="capitalize">{row.payment_method}</span>
-      ),
-    },
-    {
-      header: "Submitted",
-      accessorKey: (row: Payment): ReactNode => (
-        <div className="text-sm">
-          {new Date(row.submitted_at).toLocaleString()}
-        </div>
-      ),
-    },
-    {
-      header: "Status",
-      accessorKey: (row: Payment): ReactNode => getStatusBadge(row.status),
-    },
-    {
-      header: "Actions",
-      accessorKey: (row: Payment): ReactNode => (
-        <Button 
-          size="sm" 
-          onClick={(e) => {
-            e.stopPropagation();
-            handleViewPayment(row);
-          }}
-        >
-          View
-        </Button>
-      ),
-    },
-  ];
   
   if (!isAdmin) {
     return <div>Access denied</div>;
@@ -226,7 +193,7 @@ const AdminPayments = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Payment Requests</h1>
+        <h1 className="text-2xl font-bold">Manual Payments</h1>
         <p className="text-muted-foreground">Manage manual payment requests</p>
       </div>
 
@@ -234,7 +201,7 @@ const AdminPayments = () => {
         <CardHeader>
           <CardTitle>All Payment Requests</CardTitle>
           <CardDescription>
-            Review and process manual payment submissions
+            Approve or reject manual payment requests from users
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -250,23 +217,19 @@ const AdminPayments = () => {
 
       {selectedPayment && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Payment Request Details</DialogTitle>
+              <DialogTitle>Manual Payment Details</DialogTitle>
               <DialogDescription>
                 Review and process this payment request
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="space-y-4 my-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">User</p>
                   <p className="text-base">{selectedPayment.user_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p className="text-base">{selectedPayment.user_email}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">App</p>
@@ -284,29 +247,36 @@ const AdminPayments = () => {
                   <p className="text-sm font-medium text-muted-foreground">Submitted At</p>
                   <p className="text-base">{new Date(selectedPayment.submitted_at).toLocaleString()}</p>
                 </div>
+                {selectedPayment.verified_at && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Verified At</p>
+                    <p className="text-base">{new Date(selectedPayment.verified_at).toLocaleString()}</p>
+                  </div>
+                )}
               </div>
               
               {selectedPayment.user_note && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">User Note</p>
-                  <p className="text-base p-3 bg-gray-50 dark:bg-gray-800 rounded-md mt-1">
-                    {selectedPayment.user_note}
-                  </p>
+                <div className="bg-muted/50 p-4 rounded-md">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">User Note</p>
+                  <p className="text-base break-words">{selectedPayment.user_note}</p>
                 </div>
               )}
               
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Payment Proof</p>
-                {selectedPayment.payment_proof_url ? (
-                  <img 
-                    src={selectedPayment.payment_proof_url} 
-                    alt="Payment proof" 
-                    className="w-full max-h-80 object-contain rounded-md border"
-                  />
-                ) : (
-                  <p className="text-muted-foreground italic">No proof image provided</p>
-                )}
-              </div>
+              {selectedPayment.payment_proof_url && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Payment Proof</p>
+                  <div className="border rounded-md overflow-hidden">
+                    <img 
+                      src={selectedPayment.payment_proof_url} 
+                      alt="Payment Proof" 
+                      className="w-full h-auto"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             
             <DialogFooter>
@@ -314,15 +284,25 @@ const AdminPayments = () => {
                 <>
                   <Button
                     variant="destructive"
-                    disabled={processingAction}
-                    onClick={() => processPayment('rejected')}
+                    disabled={processing}
+                    onClick={() => handlePaymentAction('rejected')}
                   >
+                    {processing ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="mr-2 h-4 w-4" />
+                    )}
                     Reject
                   </Button>
                   <Button
-                    disabled={processingAction}
-                    onClick={() => processPayment('approved')}
+                    disabled={processing}
+                    onClick={() => handlePaymentAction('approved')}
                   >
+                    {processing ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="mr-2 h-4 w-4" />
+                    )}
                     Approve
                   </Button>
                 </>
