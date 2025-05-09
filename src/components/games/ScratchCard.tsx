@@ -59,8 +59,16 @@ const ScratchCard = () => {
     if (!ctx) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = (e instanceof MouseEvent ? e.clientX : e.touches[0].clientX) - rect.left;
-    const y = (e instanceof MouseEvent ? e.clientY : e.touches[0].clientY) - rect.top;
+    let x, y;
+    
+    // Check if it's a touch event or mouse event
+    if ('touches' in e) {
+      x = e.touches[0].clientX - rect.left;
+      y = e.touches[0].clientY - rect.top;
+    } else {
+      x = e.clientX - rect.left;
+      y = e.clientY - rect.top;
+    }
     
     // Create a "scratched" effect by clearing a circular area
     ctx.globalCompositeOperation = 'destination-out';
