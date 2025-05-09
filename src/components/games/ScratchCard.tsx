@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -451,7 +450,6 @@ const ScratchCard = () => {
         setLastScratchDate(new Date().toLocaleDateString());
       }
       
-      // Fix: Remove the variant parameter from toast call
       toast({
         title: "Congratulations! 🎉",
         description: `You won ${amount} coins!`
@@ -537,7 +535,6 @@ const ScratchCard = () => {
       
     } catch (error) {
       console.error("Error awarding coins:", error);
-      // Fix: Remove the variant parameter from toast call
       toast({
         title: "Error",
         description: "Failed to award coins"
