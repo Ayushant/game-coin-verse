@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -16,42 +15,42 @@ const gameList: Game[] = [
     id: 'tictactoe',
     title: 'Tic Tac Toe',
     description: 'A classic game of Xs and Os.',
-    imageUrl: '/images/tic-tac-toe.png',
+    imageUrl: 'https://images.unsplash.com/photo-1611996575749-79a3a250f948?q=80&w=500&auto=format&fit=crop',
     route: '/games/tictactoe',
   },
   {
     id: '2048',
     title: '2048',
     description: 'Join the numbers to get to 2048!',
-    imageUrl: '/images/2048.png',
+    imageUrl: 'https://images.unsplash.com/photo-1640376875207-b31328a4c9d6?q=80&w=500&auto=format&fit=crop',
     route: '/games/2048',
   },
   {
     id: 'sudoku',
     title: 'Sudoku',
     description: 'A number-placing puzzle.',
-    imageUrl: '/images/sudoku.png',
+    imageUrl: 'https://images.unsplash.com/photo-1602029908656-b54d16d783b9?q=80&w=500&auto=format&fit=crop',
     route: '/games/sudoku',
   },
   {
     id: 'mathchallenge',
     title: 'Math Challenge',
     description: 'Test your math skills.',
-    imageUrl: '/images/math.png',
+    imageUrl: 'https://images.unsplash.com/photo-1596495577886-d920f1fb7238?q=80&w=500&auto=format&fit=crop',
     route: '/games/mathchallenge',
   },
   {
     id: 'blockpuzzle',
     title: 'Block Puzzle',
     description: 'Fit the blocks together.',
-    imageUrl: '/images/block-puzzle.png',
+    imageUrl: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?q=80&w=500&auto=format&fit=crop',
     route: '/games/blockpuzzle',
   },
   {
     id: 'memorymatch',
     title: 'Memory Match',
     description: 'Match the pairs.',
-    imageUrl: '/images/memory-match.png',
+    imageUrl: 'https://images.unsplash.com/photo-1606167668584-78701c57f13d?q=80&w=500&auto=format&fit=crop',
     route: '/games/memorymatch',
   },
 ];
@@ -74,7 +73,7 @@ const GamesPage = () => {
           <img
             src={featuredGame.imageUrl}
             alt={featuredGame.title}
-            className="w-full md:w-1/2 rounded-lg mb-3 md:mb-0 md:mr-4"
+            className="w-full md:w-1/2 rounded-lg mb-3 md:mb-0 md:mr-4 object-cover h-48 md:h-64"
           />
           <div>
             <h3 className="text-lg font-semibold mb-2 text-white">{featuredGame.title}</h3>
@@ -115,11 +114,11 @@ interface GameCardProps {
 
 const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
   return (
-    <Card className="game-card cursor-pointer" onClick={onClick}>
+    <Card className="game-card cursor-pointer overflow-hidden" onClick={onClick}>
       <img
         src={game.imageUrl}
         alt={game.title}
-        className="w-full h-24 object-cover rounded-t-lg mb-2"
+        className="w-full h-32 object-cover rounded-t-lg mb-2"
       />
       <div className="p-3">
         <h3 className="text-md font-semibold text-white">{game.title}</h3>
