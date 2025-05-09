@@ -2,17 +2,12 @@
 import { useState, useEffect } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle,
-  CardFooter
+  CardTitle 
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -22,65 +17,90 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { 
+  Form, 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
-import { FileUpload } from '@/components/ui/file-upload';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { ReactNode } from 'react';
-import { Loader2, Plus, Trash, Edit } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2 } from 'lucide-react';
 import { App, PaymentMethod } from '@/types/app';
 
-const STORAGE_BUCKET = 'app_images';
+const appSchema = z.object({
+  name: z.string().min(2, { message: "App name is required" }),
+  description: z.string().min(10, { message: "Description must be at least 10 characters" }),
+  download_url: z.string().url({ message: "Valid download URL is required" }),
+  image_url: z.string().url().optional().or(z.literal('')),
+  payment_method: z.enum(['coins', 'razorpay', 'manual', 'free']),
+  coin_price: z.number().optional(),
+  inr_price: z.number().optional(),
+  payment_instructions: z.string().optional(),
+});
+
+type AppFormValues = z.infer<typeof appSchema>;
 
 const AdminApps = () => {
-  const { isAdmin, getConversionRateInINR } = useAdmin();
+  const { conversionRate } = useAdmin();
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedApp, setSelectedApp] = useState<App | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [formValues, setFormValues] = useState({
-    name: '',
-    description: '',
-    download_url: '',
-    coin_price: '',
-    inr_price: '',
-    payment_method: 'coins' as PaymentMethod,
-    payment_instructions: '',
-  });
-  const [imageUrl, setImageUrl] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [deletingApp, setDeletingApp] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  
+  const form = useForm<AppFormValues>({
+    resolver: zodResolver(appSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      download_url: "",
+      image_url: "",
+      payment_method: "coins",
+      coin_price: 0,
+      inr_price: 0,
+      payment_instructions: "",
+    },
+  });
 
   useEffect(() => {
-    if (isAdmin) {
-      loadApps();
-      checkStorageBucket();
+    loadApps();
+  }, []);
+  
+  useEffect(() => {
+    if (selectedApp && isEditing) {
+      form.reset({
+        name: selectedApp.name,
+        description: selectedApp.description,
+        download_url: selectedApp.download_url,
+        image_url: selectedApp.image_url || '',
+        payment_method: selectedApp.payment_method as PaymentMethod,
+        coin_price: selectedApp.coin_price || 0,
+        inr_price: selectedApp.inr_price || 0,
+        payment_instructions: selectedApp.payment_instructions || '',
+      });
     }
-  }, [isAdmin]);
-
-  const checkStorageBucket = async () => {
-    try {
-      // Check if storage bucket exists, create if not
-      const { data, error } = await supabase.storage.getBucket(STORAGE_BUCKET);
-      
-      if (error && error.message.includes('not found')) {
-        await supabase.storage.createBucket(STORAGE_BUCKET, {
-          public: true
-        });
-      }
-    } catch (error) {
-      console.error('Error checking storage bucket:', error);
-    }
-  };
+  }, [selectedApp, isEditing, form]);
 
   const loadApps = async () => {
     try {
@@ -93,13 +113,7 @@ const AdminApps = () => {
       
       if (error) throw error;
       
-      // Ensure proper PaymentMethod type
-      const typedApps: App[] = data.map(app => ({
-        ...app,
-        payment_method: app.payment_method as PaymentMethod
-      }));
-      
-      setApps(typedApps);
+      setApps(data || []);
     } catch (error) {
       console.error('Error loading apps:', error);
       toast({
@@ -111,163 +125,71 @@ const AdminApps = () => {
       setLoading(false);
     }
   };
-
-  const handleAddNewApp = () => {
+  
+  const openNewAppDialog = () => {
     setSelectedApp(null);
-    setFormValues({
-      name: '',
-      description: '',
-      download_url: '',
-      coin_price: '',
-      inr_price: '',
-      payment_method: 'coins',
-      payment_instructions: '',
+    setIsEditing(true);
+    form.reset({
+      name: "",
+      description: "",
+      download_url: "",
+      image_url: "",
+      payment_method: "coins",
+      coin_price: 0,
+      inr_price: 0,
+      payment_instructions: "",
     });
-    setImageUrl('');
     setDialogOpen(true);
   };
-
-  const handleEditApp = (app: App) => {
+  
+  const openEditDialog = (app: App) => {
     setSelectedApp(app);
-    setFormValues({
-      name: app.name,
-      description: app.description,
-      download_url: app.download_url,
-      coin_price: app.coin_price?.toString() || '',
-      inr_price: app.inr_price?.toString() || '',
-      payment_method: app.payment_method,
-      payment_instructions: app.payment_instructions || '',
-    });
-    setImageUrl(app.image_url || '');
+    setIsEditing(true);
     setDialogOpen(true);
   };
-
-  const handleDeleteApp = (app: App) => {
+  
+  const viewAppDetails = (app: App) => {
     setSelectedApp(app);
-    setDeleteDialogOpen(true);
+    setIsEditing(false);
+    setDialogOpen(true);
   };
-
-  const handleUploadComplete = (url: string) => {
-    setImageUrl(url);
-  };
-
-  const saveApp = async () => {
+  
+  const handleDeleteApp = async (id: string) => {
     try {
-      setSaving(true);
+      setDeletingApp(id);
       
-      const appData = {
-        name: formValues.name,
-        description: formValues.description,
-        download_url: formValues.download_url,
-        image_url: imageUrl,
-        coin_price: formValues.coin_price ? Number(formValues.coin_price) : null,
-        inr_price: formValues.inr_price ? Number(formValues.inr_price) : null,
-        payment_method: formValues.payment_method,
-        payment_instructions: formValues.payment_method === 'manual' ? formValues.payment_instructions : null,
-      };
+      // Check if there are any purchases for this app
+      const { data: purchases, error: purchaseError } = await supabase
+        .from('purchases')
+        .select('id')
+        .eq('app_id', id);
       
-      // Validate form
-      if (!appData.name || !appData.description || !appData.download_url) {
+      if (purchaseError) throw purchaseError;
+      
+      if (purchases && purchases.length > 0) {
         toast({
-          title: 'Missing Fields',
-          description: 'Please fill in all required fields',
+          title: 'Cannot Delete',
+          description: `This app has ${purchases.length} purchases and cannot be deleted`,
           variant: 'destructive',
         });
         return;
       }
       
-      // Check payment method requirements
-      if (appData.payment_method === 'coins' && !appData.coin_price) {
-        toast({
-          title: 'Missing Coin Price',
-          description: 'Please enter a coin price for coin payment method',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if ((appData.payment_method === 'razorpay' || appData.payment_method === 'manual') && !appData.inr_price) {
-        toast({
-          title: 'Missing INR Price',
-          description: 'Please enter an INR price for this payment method',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (appData.payment_method === 'manual' && !appData.payment_instructions) {
-        toast({
-          title: 'Missing Payment Instructions',
-          description: 'Please enter payment instructions for manual payment method',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      let result;
-      if (selectedApp) {
-        // Update existing app
-        result = await supabase
-          .from('paid_apps')
-          .update(appData)
-          .eq('id', selectedApp.id);
-      } else {
-        // Create new app
-        result = await supabase
-          .from('paid_apps')
-          .insert([appData]);
-      }
-      
-      if (result.error) throw result.error;
-      
-      toast({
-        title: selectedApp ? 'App Updated' : 'App Created',
-        description: selectedApp 
-          ? `${appData.name} has been updated` 
-          : `${appData.name} has been added to the store`,
-      });
-      
-      // Reload apps
-      loadApps();
-      
-      // Close dialog
-      setDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving app:', error);
-      toast({
-        title: 'Error',
-        description: selectedApp ? 'Failed to update app' : 'Failed to create app',
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteApp = async () => {
-    if (!selectedApp) return;
-    
-    try {
-      setDeleting(true);
-      
+      // Delete the app
       const { error } = await supabase
         .from('paid_apps')
         .delete()
-        .eq('id', selectedApp.id);
+        .eq('id', id);
       
       if (error) throw error;
       
+      // Update the local state
+      setApps(apps.filter(app => app.id !== id));
+      
       toast({
         title: 'App Deleted',
-        description: `${selectedApp.name} has been deleted from the store`,
+        description: 'App has been successfully deleted',
       });
-      
-      // Update local state
-      setApps(apps.filter(app => app.id !== selectedApp.id));
-      
-      // Close dialog
-      setDeleteDialogOpen(false);
-      setSelectedApp(null);
     } catch (error) {
       console.error('Error deleting app:', error);
       toast({
@@ -276,68 +198,161 @@ const AdminApps = () => {
         variant: 'destructive',
       });
     } finally {
-      setDeleting(false);
+      setDeletingApp(null);
     }
   };
-
-  const renderPrice = (app: App) => {
+  
+  const onSubmit = async (values: AppFormValues) => {
+    try {
+      setSubmitting(true);
+      
+      // Prepare the app data
+      const appData = {
+        ...values,
+        // Convert empty string to null for optional fields
+        image_url: values.image_url || null,
+        payment_instructions: values.payment_instructions || null,
+        // Only include price fields based on payment method
+        coin_price: ['coins', 'free'].includes(values.payment_method) 
+          ? values.coin_price 
+          : null,
+        inr_price: ['razorpay', 'manual'].includes(values.payment_method) 
+          ? values.inr_price 
+          : null,
+      };
+      
+      if (selectedApp) {
+        // Update existing app
+        const { error } = await supabase
+          .from('paid_apps')
+          .update({
+            ...appData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedApp.id);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setApps(apps.map(app => 
+          app.id === selectedApp.id
+            ? { ...app, ...appData }
+            : app
+        ));
+        
+        toast({
+          title: 'App Updated',
+          description: 'App details have been successfully updated',
+        });
+      } else {
+        // Create new app
+        const { data, error } = await supabase
+          .from('paid_apps')
+          .insert([appData])
+          .select();
+        
+        if (error) throw error;
+        
+        // Add new app to local state
+        if (data && data[0]) {
+          setApps([data[0], ...apps]);
+        }
+        
+        toast({
+          title: 'App Created',
+          description: 'New app has been successfully created',
+        });
+      }
+      
+      // Close dialog and reset form
+      setDialogOpen(false);
+      setSelectedApp(null);
+      setIsEditing(false);
+      form.reset();
+    } catch (error) {
+      console.error('Error saving app:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save app',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  const getPaymentMethod = (method: string) => {
+    switch (method) {
+      case 'coins':
+        return 'Coins';
+      case 'razorpay':
+        return 'Online Payment';
+      case 'manual':
+        return 'Manual Payment';
+      case 'free':
+        return 'Free';
+      default:
+        return method;
+    }
+  };
+  
+  const getAppPrice = (app: App) => {
     if (app.payment_method === 'free') {
-      return <span className="text-gray-500">Free</span>;
+      return 'Free';
+    } else if (app.payment_method === 'coins' && app.coin_price) {
+      return `${app.coin_price} coins`;
+    } else if (['razorpay', 'manual'].includes(app.payment_method) && app.inr_price) {
+      return `₹${app.inr_price}`;
+    } else {
+      return 'N/A';
     }
-    
-    return (
-      <div className="space-y-1">
-        {app.coin_price && (
-          <div className="font-medium">{app.coin_price} coins</div>
-        )}
-        {app.inr_price && (
-          <div className="text-sm">₹{app.inr_price}</div>
-        )}
-      </div>
-    );
   };
-
+  
+  const handlePaymentMethodChange = (value: string) => {
+    form.setValue('payment_method', value as PaymentMethod);
+    
+    // Reset price fields based on payment method
+    if (value === 'coins' || value === 'free') {
+      form.setValue('inr_price', 0);
+    } else if (value === 'razorpay' || value === 'manual') {
+      form.setValue('coin_price', 0);
+    }
+  };
+  
   const columns = [
     {
       header: "App",
       accessorKey: (row: App): ReactNode => (
-        <div className="flex items-center">
-          {row.image_url ? (
+        <div className="flex items-center gap-3">
+          {row.image_url && (
             <img 
               src={row.image_url} 
               alt={row.name} 
-              className="w-10 h-10 object-cover rounded mr-3"
+              className="w-10 h-10 rounded"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }}
             />
-          ) : (
-            <div className="w-10 h-10 bg-gray-200 rounded mr-3 flex items-center justify-center text-gray-400">
-              No img
-            </div>
           )}
           <div>
             <div className="font-medium">{row.name}</div>
-            <div className="text-sm text-muted-foreground line-clamp-1">{row.description}</div>
+            <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+              {row.description}
+            </div>
           </div>
         </div>
       ),
     },
     {
-      header: "Price",
-      accessorKey: (row: App): ReactNode => renderPrice(row),
-    },
-    {
       header: "Payment Method",
-      accessorKey: (row: App): ReactNode => (
-        <Badge className={
-          row.payment_method === 'coins' ? 'bg-green-500' : 
-          row.payment_method === 'razorpay' ? 'bg-blue-500' :
-          row.payment_method === 'manual' ? 'bg-purple-500' : 'bg-gray-500'
-        }>
-          {row.payment_method}
-        </Badge>
-      ),
+      accessorKey: (row: App): ReactNode => getPaymentMethod(row.payment_method),
     },
     {
-      header: "Added",
+      header: "Price",
+      accessorKey: (row: App): ReactNode => getAppPrice(row),
+    },
+    {
+      header: "Created On",
       accessorKey: (row: App): ReactNode => (
         <div className="text-sm">
           {new Date(row.created_at).toLocaleDateString()}
@@ -347,44 +362,45 @@ const AdminApps = () => {
     {
       header: "Actions",
       accessorKey: (row: App): ReactNode => (
-        <div className="flex space-x-2">
+        <div className="flex gap-2 justify-end">
           <Button 
-            variant="outline" 
-            size="sm"
+            size="sm" 
+            variant="outline"
             onClick={(e) => {
               e.stopPropagation();
-              handleEditApp(row);
+              openEditDialog(row);
             }}
           >
             <Edit className="h-4 w-4" />
           </Button>
           <Button 
-            variant="destructive" 
-            size="sm"
+            size="sm" 
+            variant="destructive"
             onClick={(e) => {
               e.stopPropagation();
-              handleDeleteApp(row);
+              handleDeleteApp(row.id);
             }}
+            disabled={deletingApp === row.id}
           >
-            <Trash className="h-4 w-4" />
+            {deletingApp === row.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
           </Button>
         </div>
       ),
     },
   ];
 
-  if (!isAdmin) {
-    return <div>Access denied</div>;
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">App Management</h1>
-          <p className="text-muted-foreground">Manage apps in the store</p>
+          <p className="text-muted-foreground">Manage downloadable apps</p>
         </div>
-        <Button onClick={handleAddNewApp}>
+        <Button onClick={openNewAppDialog}>
           <Plus className="mr-2 h-4 w-4" />
           Add New App
         </Button>
@@ -394,196 +410,299 @@ const AdminApps = () => {
         <CardHeader>
           <CardTitle>All Apps</CardTitle>
           <CardDescription>
-            {apps.length} {apps.length === 1 ? 'app' : 'apps'} in store
+            Manage and monitor all available apps
           </CardDescription>
         </CardHeader>
         <CardContent>
           <DataTable
             columns={columns}
             data={apps}
+            onRowClick={viewAppDetails}
             isLoading={loading}
             emptyMessage="No apps found"
           />
         </CardContent>
       </Card>
 
-      {/* App Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{selectedApp ? 'Edit App' : 'Add New App'}</DialogTitle>
+            <DialogTitle>
+              {isEditing 
+                ? selectedApp 
+                  ? 'Edit App' 
+                  : 'Add New App' 
+                : 'App Details'}
+            </DialogTitle>
             <DialogDescription>
-              {selectedApp ? 'Update app details' : 'Add a new app to the store'}
+              {isEditing 
+                ? 'Fill in the details to create or update an app'
+                : 'View app details'}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-6 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">App Name</Label>
-                <Input
-                  id="name"
-                  value={formValues.name}
-                  onChange={(e) => setFormValues({...formValues, name: e.target.value})}
-                  placeholder="App Name"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="download_url">Download URL</Label>
-                <Input
-                  id="download_url"
-                  value={formValues.download_url}
-                  onChange={(e) => setFormValues({...formValues, download_url: e.target.value})}
-                  placeholder="https://example.com/app.apk"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formValues.description}
-                onChange={(e) => setFormValues({...formValues, description: e.target.value})}
-                placeholder="App description"
-                rows={3}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>App Image</Label>
-              <div className="flex items-center space-x-4">
-                {imageUrl && (
-                  <img 
-                    src={imageUrl} 
-                    alt="App preview" 
-                    className="w-20 h-20 object-cover rounded"
+          {isEditing ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>App Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter app name..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
+                  
+                  <FormField
+                    control={form.control}
+                    name="payment_method"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Method</FormLabel>
+                        <Select 
+                          onValueChange={handlePaymentMethodChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select payment method" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="coins">Coins</SelectItem>
+                            <SelectItem value="razorpay">Razorpay</SelectItem>
+                            <SelectItem value="manual">Manual Payment</SelectItem>
+                            <SelectItem value="free">Free</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                
+                  {form.watch('payment_method') === 'coins' && (
+                    <FormField
+                      control={form.control}
+                      name="coin_price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price in Coins</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0"
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            ≈ ₹{((field.value || 0) / conversionRate).toFixed(2)}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  
+                  {['razorpay', 'manual'].includes(form.watch('payment_method')) && (
+                    <FormField
+                      control={form.control}
+                      name="inr_price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price in INR (₹)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              step="0.01"
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            ≈ {Math.floor((field.value || 0) * conversionRate)} coins
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  
+                  <FormField
+                    control={form.control}
+                    name="download_url"
+                    render={({ field }) => (
+                      <FormItem className="col-span-1 md:col-span-2">
+                        <FormLabel>Download URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="image_url"
+                    render={({ field }) => (
+                      <FormItem className="col-span-1 md:col-span-2">
+                        <FormLabel>Image URL (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem className="col-span-1 md:col-span-2">
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe the app..." 
+                            className="resize-none min-h-24" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {form.watch('payment_method') === 'manual' && (
+                    <FormField
+                      control={form.control}
+                      name="payment_instructions"
+                      render={({ field }) => (
+                        <FormItem className="col-span-1 md:col-span-2">
+                          <FormLabel>Payment Instructions</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Instructions for manual payment..." 
+                              className="resize-none" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setDialogOpen(false);
+                      setIsEditing(false);
+                      form.reset();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                    ) : (
+                      selectedApp ? 'Update App' : 'Create App'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          ) : selectedApp && (
+            <>
+              <div className="space-y-4">
+                {selectedApp.image_url && (
+                  <div className="flex justify-center">
+                    <img 
+                      src={selectedApp.image_url} 
+                      alt={selectedApp.name} 
+                      className="h-40 w-auto object-contain rounded-md"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                  </div>
                 )}
-                <FileUpload 
-                  onUploadComplete={handleUploadComplete}
-                  storageBucket={STORAGE_BUCKET}
-                  storagePath="images"
-                  acceptedFileTypes="image/*"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="payment_method">Payment Method</Label>
-              <Select
-                value={formValues.payment_method}
-                onValueChange={(value) => setFormValues({...formValues, payment_method: value as PaymentMethod})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select payment method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="coins">Coins</SelectItem>
-                  <SelectItem value="razorpay">Razorpay (INR)</SelectItem>
-                  <SelectItem value="manual">Manual Payment (UPI/Bank)</SelectItem>
-                  <SelectItem value="free">Free</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              {(formValues.payment_method === 'coins' || formValues.payment_method === 'free') && (
-                <div className="space-y-2">
-                  <Label htmlFor="coin_price">Coin Price</Label>
-                  <Input
-                    id="coin_price"
-                    type="number"
-                    value={formValues.coin_price}
-                    onChange={(e) => setFormValues({...formValues, coin_price: e.target.value})}
-                    placeholder="100"
-                    disabled={formValues.payment_method === 'free'}
-                  />
-                  {formValues.payment_method === 'free' && (
-                    <p className="text-xs text-muted-foreground">Free apps don't have a coin price</p>
-                  )}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Name</p>
+                    <p className="text-base">{selectedApp.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Payment Method</p>
+                    <p className="text-base">{getPaymentMethod(selectedApp.payment_method)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Price</p>
+                    <p className="text-base">{getAppPrice(selectedApp)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Created On</p>
+                    <p className="text-base">{new Date(selectedApp.created_at).toLocaleString()}</p>
+                  </div>
                 </div>
-              )}
+                
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Download URL</p>
+                  <p className="text-base break-all">
+                    <a 
+                      href={selectedApp.download_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      {selectedApp.download_url}
+                    </a>
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Description</p>
+                  <p className="text-base whitespace-pre-line">{selectedApp.description}</p>
+                </div>
+                
+                {selectedApp.payment_method === 'manual' && selectedApp.payment_instructions && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Payment Instructions</p>
+                    <p className="text-base whitespace-pre-line">{selectedApp.payment_instructions}</p>
+                  </div>
+                )}
+              </div>
               
-              {(formValues.payment_method === 'razorpay' || formValues.payment_method === 'manual') && (
-                <div className="space-y-2">
-                  <Label htmlFor="inr_price">Price (INR)</Label>
-                  <Input
-                    id="inr_price"
-                    type="number"
-                    value={formValues.inr_price}
-                    onChange={(e) => setFormValues({...formValues, inr_price: e.target.value})}
-                    placeholder="99"
-                  />
-                  {formValues.payment_method === 'manual' && formValues.inr_price && (
-                    <p className="text-xs text-muted-foreground">
-                      Equivalent to approximately {Math.round(Number(formValues.inr_price) * 100)} coins
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-            
-            {formValues.payment_method === 'manual' && (
-              <div className="space-y-2">
-                <Label htmlFor="payment_instructions">Payment Instructions</Label>
-                <Textarea
-                  id="payment_instructions"
-                  value={formValues.payment_instructions}
-                  onChange={(e) => setFormValues({...formValues, payment_instructions: e.target.value})}
-                  placeholder="UPI ID: example@upi or Bank details for payment"
-                  rows={3}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Provide clear instructions for users on how to make the payment
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={saveApp} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                selectedApp ? 'Update App' : 'Add App'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedApp?.name}? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={deleteApp} disabled={deleting}>
-              {deleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete App'
-              )}
-            </Button>
-          </DialogFooter>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setDialogOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setIsEditing(true);
+                  }}
+                >
+                  Edit
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

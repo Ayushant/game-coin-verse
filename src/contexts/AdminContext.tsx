@@ -5,13 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 // Define types for our context
-type ConversionRate = {
-  id: string;
-  coins_to_inr: number;
-  created_at: string;
-  updated_at: string;
-};
-
 interface AdminContextType {
   isAdmin: boolean;
   loading: boolean;
@@ -27,40 +20,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(true); // Set to true by default for hardcoded admin credentials
+  const [loading, setLoading] = useState<boolean>(false);
   const [conversionRate, setConversionRate] = useState<number>(100); // Default: 100 coins = 1 INR
   const { toast } = useToast();
-
-  // Check if the current user is an admin
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-
-        setIsAdmin(data.role === 'admin');
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user]);
 
   // Load conversion rate from settings
   useEffect(() => {

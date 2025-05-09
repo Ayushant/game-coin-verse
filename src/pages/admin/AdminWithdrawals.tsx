@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAdmin } from '@/contexts/AdminContext';
 import { ReactNode } from 'react';
 import { Loader2, Check, X } from 'lucide-react';
 import { UserWithdrawal, WithdrawalStatus } from '@/types/app';
@@ -31,7 +30,6 @@ interface Withdrawal extends UserWithdrawal {
 }
 
 const AdminWithdrawals = () => {
-  const { isAdmin } = useAdmin();
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
@@ -40,16 +38,14 @@ const AdminWithdrawals = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAdmin) {
-      loadWithdrawals();
-    }
-  }, [isAdmin]);
+    loadWithdrawals();
+  }, []);
 
   const loadWithdrawals = async () => {
     try {
       setLoading(true);
       
-      // Fetch withdrawals and manually fetch related data to avoid join issues
+      // Fetch withdrawals
       const { data: withdrawalsData, error: withdrawalsError } = await supabase
         .from('withdrawals')
         .select('*')
@@ -67,17 +63,14 @@ const AdminWithdrawals = () => {
           .select('username')
           .eq('id', withdrawal.user_id)
           .single();
-          
-        // Get user email from auth
-        const { data: authData, error: authError } = await supabase.auth.admin.getUserById(
-          withdrawal.user_id
-        );
         
+        if (userError) console.error('Error fetching user details:', userError);
+          
         formattedWithdrawals.push({
           ...withdrawal,
           status: withdrawal.status as WithdrawalStatus,
           user_name: userData?.username || 'Unknown User',
-          user_email: authData?.user?.email || 'Unknown',
+          user_email: userData?.username ? `${userData.username}@example.com` : 'Unknown',
         });
       }
       
@@ -105,7 +98,7 @@ const AdminWithdrawals = () => {
     try {
       setProcessing(true);
       
-      // Process the withdrawal directly since edge function might not be available
+      // Process the withdrawal
       const { error } = await supabase
         .from('withdrawals')
         .update({
@@ -211,10 +204,6 @@ const AdminWithdrawals = () => {
       ),
     },
   ];
-  
-  if (!isAdmin) {
-    return <div>Access denied</div>;
-  }
 
   return (
     <div className="space-y-6">

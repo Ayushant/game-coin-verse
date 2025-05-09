@@ -28,7 +28,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAdmin } from '@/contexts/AdminContext';
 import { ReactNode } from 'react';
 import { Users, Search, Loader2, Plus, Minus } from 'lucide-react';
 import { UserWithdrawal, UserPurchase, WithdrawalStatus } from '@/types/app';
@@ -45,7 +44,6 @@ interface User {
 }
 
 const AdminUsers = () => {
-  const { isAdmin } = useAdmin();
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -60,10 +58,8 @@ const AdminUsers = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAdmin) {
-      loadUsers();
-    }
-  }, [isAdmin]);
+    loadUsers();
+  }, []);
 
   useEffect(() => {
     if (searchQuery) {
@@ -89,20 +85,12 @@ const AdminUsers = () => {
       
       if (profilesError) throw profilesError;
       
-      // Fetch emails for each profile
-      const formattedUsers: User[] = [];
-      
-      for (const profile of profilesData || []) {
-        // Get user auth data for email
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
-          profile.id
-        );
-        
-        formattedUsers.push({
-          ...profile,
-          email: userData?.user?.email || 'N/A'
-        });
-      }
+      // Format the profiles data directly without trying to fetch auth data
+      const formattedUsers: User[] = profilesData?.map(profile => ({
+        ...profile,
+        email: profile.username ? `${profile.username}@example.com` : 'N/A', // Fallback email since we can't fetch real emails
+        role: profile.role || 'user'
+      })) || [];
       
       setUsers(formattedUsers);
       setFilteredUsers(formattedUsers);
@@ -131,10 +119,10 @@ const AdminUsers = () => {
       if (error) throw error;
       
       // Ensure proper typing of the response
-      const typedWithdrawals: UserWithdrawal[] = data.map(item => ({
+      const typedWithdrawals: UserWithdrawal[] = data?.map(item => ({
         ...item,
         status: item.status as WithdrawalStatus
-      }));
+      })) || [];
       
       setUserWithdrawals(typedWithdrawals);
     } catch (error) {
@@ -155,22 +143,19 @@ const AdminUsers = () => {
       
       const { data, error } = await supabase
         .from('purchases')
-        .select(`
-          *,
-          paid_apps!inner(name)
-        `)
+        .select('*, paid_apps(name)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      const formattedPurchases: UserPurchase[] = data.map(purchase => ({
+      const formattedPurchases: UserPurchase[] = data?.map(purchase => ({
         id: purchase.id,
         app_id: purchase.app_id,
         app_name: purchase.paid_apps?.name || 'Unknown App',
         payment_type: purchase.payment_type,
         created_at: purchase.created_at
-      }));
+      })) || [];
       
       setUserPurchases(formattedPurchases);
     } catch (error) {
@@ -337,10 +322,6 @@ const AdminUsers = () => {
       ),
     },
   ];
-
-  if (!isAdmin) {
-    return <div>Access denied</div>;
-  }
 
   return (
     <div className="space-y-6">

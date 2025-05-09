@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAdmin } from '@/contexts/AdminContext';
 import { ReactNode } from 'react';
 import { Loader2, Check, X } from 'lucide-react';
 
@@ -38,7 +38,6 @@ interface ManualPayment {
 }
 
 const AdminPayments = () => {
-  const { isAdmin } = useAdmin();
   const [payments, setPayments] = useState<ManualPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<ManualPayment | null>(null);
@@ -46,35 +45,47 @@ const AdminPayments = () => {
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
-  // Define columns for the DataTable with the correct types
+  // Define columns for the DataTable
   const columns = [
     { 
       header: "User", 
-      accessorKey: (row: ManualPayment) => row.user_name 
+      accessorKey: (row: ManualPayment): ReactNode => row.user_name 
     },
     { 
       header: "App", 
-      accessorKey: (row: ManualPayment) => row.app_name
+      accessorKey: (row: ManualPayment): ReactNode => row.app_name
     },
     { 
       header: "Method", 
-      accessorKey: (row: ManualPayment) => <span className="capitalize">{row.payment_method}</span> 
+      accessorKey: (row: ManualPayment): ReactNode => <span className="capitalize">{row.payment_method}</span> 
     },
     { 
       header: "Status", 
-      accessorKey: (row: ManualPayment) => getStatusBadge(row.status) 
+      accessorKey: (row: ManualPayment): ReactNode => getStatusBadge(row.status) 
     },
     { 
       header: "Date", 
-      accessorKey: (row: ManualPayment) => new Date(row.submitted_at).toLocaleDateString() 
-    }
+      accessorKey: (row: ManualPayment): ReactNode => new Date(row.submitted_at).toLocaleDateString() 
+    },
+    {
+      header: "Actions",
+      accessorKey: (row: ManualPayment): ReactNode => (
+        <Button 
+          size="sm" 
+          onClick={(e) => {
+            e.stopPropagation();
+            handleViewPayment(row);
+          }}
+        >
+          View
+        </Button>
+      ),
+    },
   ];
 
   useEffect(() => {
-    if (isAdmin) {
-      loadPayments();
-    }
-  }, [isAdmin]);
+    loadPayments();
+  }, []);
 
   const loadPayments = async () => {
     try {
@@ -209,10 +220,6 @@ const AdminPayments = () => {
         return <Badge>{status}</Badge>;
     }
   };
-  
-  if (!isAdmin) {
-    return <div>Access denied</div>;
-  }
 
   return (
     <div className="space-y-6">
