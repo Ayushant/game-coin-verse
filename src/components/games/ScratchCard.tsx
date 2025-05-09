@@ -453,8 +453,7 @@ const ScratchCard = () => {
       
       toast({
         title: "Congratulations! 🎉",
-        description: `You won ${amount} coins!`,
-        variant: "default"
+        description: `You won ${amount} coins!`
       });
       
       // Create a burst of particles from the center of the canvas
