@@ -57,12 +57,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const { error } = await supabase
         .from('settings')
-        .insert([
-          {
-            coins_to_inr: rate,
-            updated_at: new Date().toISOString()
-          },
-        ]);
+        .insert({
+          coins_to_inr: rate,
+          updated_at: new Date().toISOString()
+        });
 
       if (error) throw error;
 

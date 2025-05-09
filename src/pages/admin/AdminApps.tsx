@@ -113,7 +113,13 @@ const AdminApps = () => {
       
       if (error) throw error;
       
-      setApps(data || []);
+      // Cast the data from Supabase to match our App type
+      const typedApps: App[] = data?.map(app => ({
+        ...app,
+        payment_method: app.payment_method as PaymentMethod,
+      })) || [];
+
+      setApps(typedApps);
     } catch (error) {
       console.error('Error loading apps:', error);
       toast({
@@ -208,17 +214,18 @@ const AdminApps = () => {
       
       // Prepare the app data
       const appData = {
-        ...values,
-        // Convert empty string to null for optional fields
+        name: values.name,
+        description: values.description,
+        download_url: values.download_url,
         image_url: values.image_url || null,
-        payment_instructions: values.payment_instructions || null,
-        // Only include price fields based on payment method
+        payment_method: values.payment_method,
         coin_price: ['coins', 'free'].includes(values.payment_method) 
           ? values.coin_price 
           : null,
         inr_price: ['razorpay', 'manual'].includes(values.payment_method) 
           ? values.inr_price 
           : null,
+        payment_instructions: values.payment_instructions || null,
       };
       
       if (selectedApp) {
@@ -236,7 +243,7 @@ const AdminApps = () => {
         // Update local state
         setApps(apps.map(app => 
           app.id === selectedApp.id
-            ? { ...app, ...appData }
+            ? { ...app, ...appData, payment_method: appData.payment_method as PaymentMethod }
             : app
         ));
         
@@ -253,9 +260,13 @@ const AdminApps = () => {
         
         if (error) throw error;
         
-        // Add new app to local state
+        // Add new app to local state with proper typing
         if (data && data[0]) {
-          setApps([data[0], ...apps]);
+          const newApp: App = {
+            ...data[0],
+            payment_method: data[0].payment_method as PaymentMethod
+          };
+          setApps([newApp, ...apps]);
         }
         
         toast({
