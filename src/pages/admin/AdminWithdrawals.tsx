@@ -45,6 +45,8 @@ const AdminWithdrawals = () => {
     try {
       setLoading(true);
       
+      console.log("Fetching withdrawals data...");
+      
       // Use anon key directly to bypass RLS for admin operations
       const { data: withdrawalsData, error: withdrawalsError } = await supabase
         .from('withdrawals')
@@ -125,16 +127,29 @@ const AdminWithdrawals = () => {
     try {
       setProcessing(true);
       
-      // Process the withdrawal
-      const { error } = await supabase
-        .from('withdrawals')
-        .update({
-          status: status,
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', selectedWithdrawal.id);
+      console.log(`Processing withdrawal ${selectedWithdrawal.id} with status: ${status}`);
       
-      if (error) throw error;
+      // Call the edge function to process the withdrawal
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-withdrawal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          withdrawalId: selectedWithdrawal.id,
+          status: status,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('Error from process-withdrawal function:', result);
+        throw new Error(result.error || 'Failed to process withdrawal');
+      }
+      
+      console.log('Edge function response:', result);
       
       toast({
         title: 'Withdrawal Processed',
@@ -155,6 +170,10 @@ const AdminWithdrawals = () => {
       // Close dialog
       setDialogOpen(false);
       setSelectedWithdrawal(null);
+      
+      // Reload withdrawals to ensure data is fresh
+      loadWithdrawals();
+      
     } catch (error) {
       console.error('Error processing withdrawal:', error);
       toast({
@@ -167,7 +186,7 @@ const AdminWithdrawals = () => {
     }
   };
 
-  const getStatusBadge = (status: WithdrawalStatus) => {
+  const getStatusBadge = (status: WithdrawalStatus): ReactNode => {
     switch (status) {
       case 'pending':
         return <Badge className="bg-yellow-500">Pending</Badge>;
@@ -291,7 +310,7 @@ const AdminWithdrawals = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Status</p>
-                  <p className="text-base">{getStatusBadge(selectedWithdrawal.status)}</p>
+                  <div>{getStatusBadge(selectedWithdrawal.status)}</div>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Requested At</p>

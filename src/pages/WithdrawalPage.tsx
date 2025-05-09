@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowDown, Clock, Wallet } from 'lucide-react';
+import { ArrowDown, Clock, Wallet, RefreshCw } from 'lucide-react';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 
 interface Withdrawal {
@@ -29,6 +30,7 @@ const WithdrawalPage = () => {
   const { toast } = useToast();
   const { getConversionRateInINR } = useAdmin();
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [amount, setAmount] = useState('');
   const [upiId, setUpiId] = useState('');
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -41,19 +43,33 @@ const WithdrawalPage = () => {
     if (!user || user.isGuest) return;
     
     try {
+      setIsRefreshing(true);
+      console.log('Fetching withdrawals for user:', user.id);
+      
       const { data, error } = await supabase
         .from('withdrawals')
         .select('*')
         .eq('user_id', user.id)
         .order('requested_at', { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching withdrawals:', error);
+        throw error;
+      }
       
       if (data) {
+        console.log('Withdrawals fetched:', data.length);
         setWithdrawals(data as Withdrawal[]);
       }
     } catch (error) {
       console.error('Error fetching withdrawals:', error);
+      toast({
+        title: 'Error',
+        description: 'Could not fetch withdrawal history',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
     }
   };
   
@@ -168,6 +184,10 @@ const WithdrawalPage = () => {
       setIsLoading(false);
     }
   };
+
+  const handleRefresh = () => {
+    fetchWithdrawals();
+  };
   
   // Load withdrawal history when component mounts
   useEffect(() => {
@@ -256,14 +276,30 @@ const WithdrawalPage = () => {
         </div>
       </Card>
       
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <h2 className="text-xl font-semibold text-white">Withdrawal History</h2>
+        {!user.isGuest && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        )}
       </div>
       
       <Card className="game-card p-4">
         <div className="space-y-3">
           {user.isGuest ? (
             <p className="text-center py-6 text-gray-500">Sign up to access withdrawal history</p>
+          ) : isRefreshing ? (
+            <div className="flex justify-center items-center py-6">
+              <RefreshCw className="h-5 w-5 text-gray-400 animate-spin" />
+              <span className="ml-2 text-gray-500">Refreshing...</span>
+            </div>
           ) : withdrawals.length === 0 ? (
             <p className="text-center py-6 text-gray-500">No withdrawal history yet</p>
           ) : (
@@ -289,10 +325,11 @@ const WithdrawalPage = () => {
                   </div>
                   <div className={`text-xs px-2 py-0.5 rounded-full ${
                     withdrawal.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
-                    withdrawal.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 
+                    withdrawal.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 
                     'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
                   }`}>
-                    {withdrawal.status.charAt(0).toUpperCase() + withdrawal.status.slice(1)}
+                    {withdrawal.status === 'completed' ? 'Completed' : 
+                     withdrawal.status === 'failed' ? 'Failed' : 'Pending'}
                   </div>
                 </div>
               </div>

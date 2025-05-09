@@ -48,8 +48,11 @@ serve(async (req) => {
       .single();
 
     if (withdrawalError) {
+      console.error("Error fetching withdrawal:", withdrawalError);
       throw withdrawalError;
     }
+
+    console.log("Processing withdrawal:", withdrawalId, "Current status:", withdrawalData.status);
 
     // 2. Update withdrawal status
     const { error: updateError } = await supabaseClient
@@ -61,8 +64,11 @@ serve(async (req) => {
       .eq("id", withdrawalId);
 
     if (updateError) {
+      console.error("Error updating withdrawal status:", updateError);
       throw updateError;
     }
+
+    console.log("Updated withdrawal status to:", status);
 
     // 3. If rejection, refund the coins to user
     if (status === 'failed') {
@@ -74,6 +80,7 @@ serve(async (req) => {
         .single();
       
       if (userError) {
+        console.error("Error fetching user data for refund:", userError);
         throw userError;
       }
 
@@ -86,8 +93,11 @@ serve(async (req) => {
         .eq("id", withdrawalData.user_id);
       
       if (refundError) {
+        console.error("Error refunding coins:", refundError);
         throw refundError;
       }
+      
+      console.log("Refunded", withdrawalData.coins_spent, "coins to user", withdrawalData.user_id);
     }
 
     return new Response(
