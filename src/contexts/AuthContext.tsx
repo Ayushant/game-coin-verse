@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
@@ -72,55 +71,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
+    const handleAuthChange = (event: string, currentSession: Session | null) => {
+      setSession(currentSession);
+      
+      // Basic synchronous state updates
+      if (currentSession?.user) {
+        // Set minimal user data immediately
+        setUser(prevUser => ({
+          ...prevUser,
+          id: currentSession.user.id,
+          email: currentSession.user.email || undefined,
+          isGuest: false,
+        }));
         
-        // Basic synchronous state updates
-        if (currentSession?.user) {
-          // Set minimal user data immediately
-          setUser(prevUser => ({
-            ...prevUser,
-            id: currentSession.user.id,
-            email: currentSession.user.email || undefined,
-            isGuest: false,
-          }));
-          
-          // Use setTimeout to avoid potential deadlocks
-          setTimeout(() => {
-            fetchUserProfile(currentSession.user.id);
-          }, 0);
-        } else {
-          setUser(null);
-        }
-        
-        if (event === 'SIGNED_OUT') {
-          localStorage.removeItem('guestUser');
-        }
+        // Use setTimeout to avoid potential deadlocks with auth state changes
+        setTimeout(() => {
+          fetchUserProfile(currentSession.user.id);
+        }, 0);
+      } else {
+        setUser(null);
       }
-    );
+      
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('guestUser');
+      }
+    };
+
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     // THEN check for existing session
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        setSession(currentSession);
-        
         if (currentSession?.user) {
-          await fetchUserProfile(currentSession.user.id);
+          handleAuthChange('INITIAL_SESSION', currentSession);
         } else {
           // Check if there's a guest user in localStorage
           const guestUser = localStorage.getItem('guestUser');
           if (guestUser) {
             setUser(JSON.parse(guestUser));
           }
-          setLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setLoading(false);
       } finally {
         setLoading(false);
       }
