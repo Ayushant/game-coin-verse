@@ -37,7 +37,14 @@ const Login = () => {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setLoading(true);
-      const { error } = await signIn(data.email, data.password);
+      
+      // Check if the credentials match the admin account
+      const isAdmin = data.email === 'admin75' && data.password === 'projectDB@75';
+      
+      // For admin login, use the actual email in the database
+      const loginEmail = isAdmin ? 'project75database75@gmail.com' : data.email;
+      
+      const { error } = await signIn(loginEmail, isAdmin ? data.password : data.password);
 
       if (error) {
         toast({
@@ -48,9 +55,13 @@ const Login = () => {
         return;
       }
 
-      // Check if this is the admin user
-      if (data.email === 'project75database75@gmail.com') {
+      // Redirect based on user type
+      if (isAdmin) {
         navigate('/admin');
+        toast({
+          title: 'Welcome Admin',
+          description: 'You have successfully logged in as admin',
+        });
       } else {
         navigate('/');
       }
@@ -93,11 +104,11 @@ const Login = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email or Username</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter your email"
-                      type="email"
+                      placeholder="Enter email or username"
+                      type="text"
                       required
                       {...field}
                     />
