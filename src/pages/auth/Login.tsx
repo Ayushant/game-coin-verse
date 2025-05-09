@@ -41,10 +41,19 @@ const Login = () => {
       // Check if the credentials match the admin account
       const isAdmin = data.email === 'admin75' && data.password === 'projectDB@75';
       
-      // For admin login, use the actual email in the database
-      const loginEmail = isAdmin ? 'project75database75@gmail.com' : data.email;
+      if (isAdmin) {
+        // Direct admin access without authentication
+        navigate('/admin');
+        toast({
+          title: 'Welcome Admin',
+          description: 'You have successfully logged in as admin',
+        });
+        setLoading(false);
+        return;
+      }
       
-      const { error } = await signIn(loginEmail, data.password);
+      // For regular users, proceed with normal authentication
+      const { error } = await signIn(data.email, data.password);
 
       if (error) {
         console.error('Login error details:', error);
@@ -56,16 +65,9 @@ const Login = () => {
         return;
       }
 
-      // Redirect based on user type
-      if (isAdmin) {
-        navigate('/admin');
-        toast({
-          title: 'Welcome Admin',
-          description: 'You have successfully logged in as admin',
-        });
-      } else {
-        navigate('/');
-      }
+      // Redirect regular users to home page
+      navigate('/');
+      
     } catch (error) {
       console.error('Login error:', error);
       toast({

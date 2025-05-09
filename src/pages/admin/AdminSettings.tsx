@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const AdminSettings = () => {
-  const { isAdmin, conversionRate, updateConversionRate } = useAdmin();
+  const { conversionRate, updateConversionRate } = useAdmin();
   const [newRate, setNewRate] = useState<number>(conversionRate);
   const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
@@ -41,10 +41,6 @@ const AdminSettings = () => {
       setUpdating(false);
     }
   };
-
-  if (!isAdmin) {
-    return <div>Access denied</div>;
-  }
 
   return (
     <div className="space-y-6">

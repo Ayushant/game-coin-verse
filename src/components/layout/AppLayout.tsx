@@ -28,23 +28,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     );
   }
 
-  // Handle admin route access specifically for project75database75@gmail.com
+  // For admin routes - we no longer check for authentication here
   if (isAdminRoute) {
-    if (!user) {
-      // Redirect to login if not authenticated
-      return <Navigate to="/login" state={{ from: location }} replace />;
-    }
-    
-    if (!isAdmin) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="mb-4">You do not have permission to access this page.</p>
-          <a href="/" className="game-button">Return to Home</a>
-        </div>
-      );
-    }
-
     return (
       <div className="flex h-screen max-w-none mx-auto">
         <AdminSidebar />

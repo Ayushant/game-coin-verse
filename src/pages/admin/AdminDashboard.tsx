@@ -7,7 +7,6 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdmin } from '@/contexts/AdminContext';
 import { useToast } from '@/hooks/use-toast';
 import { Users, ShoppingBag, CreditCard, CircleDollarSign } from 'lucide-react';
 
@@ -20,7 +19,6 @@ interface DashboardStats {
 }
 
 const AdminDashboard = () => {
-  const { isAdmin } = useAdmin();
   const [stats, setStats] = useState<DashboardStats>({
     userCount: 0,
     appCount: 0,
@@ -32,10 +30,8 @@ const AdminDashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAdmin) {
-      loadStats();
-    }
-  }, [isAdmin]);
+    loadStats();
+  }, []);
 
   const loadStats = async () => {
     try {
@@ -99,10 +95,6 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   };
-
-  if (!isAdmin) {
-    return <div>Access denied</div>;
-  }
 
   return (
     <div>

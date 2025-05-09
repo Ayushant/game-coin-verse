@@ -13,10 +13,6 @@ import { useAdmin } from '@/contexts/AdminContext';
 
 const AdminSidebar = () => {
   const location = useLocation();
-  const { isAdmin } = useAdmin();
-
-  // Don't render if user is not admin
-  if (!isAdmin) return null;
 
   const navItems = [
     {
