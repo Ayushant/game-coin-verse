@@ -130,11 +130,14 @@ const AdminWithdrawals = () => {
       console.log(`Processing withdrawal ${selectedWithdrawal.id} with status: ${status}`);
       
       // Call the edge function to process the withdrawal
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-withdrawal`, {
+      const supabaseUrl = "https://ozdofjghekhuqrwidwsv.supabase.co";
+      const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZG9mamdoZWtodXFyd2lkd3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1NTI5NDEsImV4cCI6MjA2MjEyODk0MX0.1DTbw9K_I6Qz4tKl09U2qJTaSBQ0oc1hP3YvLBIrZ-E";
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/process-withdrawal`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({
           withdrawalId: selectedWithdrawal.id,
@@ -142,13 +145,22 @@ const AdminWithdrawals = () => {
         }),
       });
       
-      const result = await response.json();
-      
       if (!response.ok) {
-        console.error('Error from process-withdrawal function:', result);
-        throw new Error(result.error || 'Failed to process withdrawal');
+        const errorText = await response.text();
+        console.error('Error response from process-withdrawal function:', errorText);
+        let errorMessage;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || 'Failed to process withdrawal';
+        } catch (parseError) {
+          errorMessage = 'Failed to process withdrawal: Invalid response from server';
+        }
+        
+        throw new Error(errorMessage);
       }
       
+      const result = await response.json();
       console.log('Edge function response:', result);
       
       toast({
@@ -178,7 +190,7 @@ const AdminWithdrawals = () => {
       console.error('Error processing withdrawal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to process withdrawal request',
+        description: error.message || 'Failed to process withdrawal request',
         variant: 'destructive',
       });
     } finally {
