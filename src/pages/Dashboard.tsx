@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Gift, Target, Calendar, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import CoinDisplay from '@/components/ui/CoinDisplay';
+import SpinWheel from '@/components/games/SpinWheel';
+import ScratchCard from '@/components/games/ScratchCard';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -66,37 +68,10 @@ const Dashboard = () => {
         </div>
       </Card>
 
-      {/* Spin Wheel */}
+      {/* Spin Wheel & Scratch Card */}
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <Card className="game-card p-4 flex flex-col justify-between">
-          <h3 className="game-card-header">Spin Wheel</h3>
-          <div className="flex justify-between items-end">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Spin & Earn</p>
-            <div className="bg-game-purple/20 p-2 rounded-full">
-              <svg className="h-8 w-8 text-game-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                <path d="M2 12h20" />
-              </svg>
-            </div>
-          </div>
-        </Card>
-        
-        {/* Scratch Card */}
-        <Card className="game-card p-4 flex flex-col justify-between">
-          <h3 className="game-card-header">Scratch</h3>
-          <div className="flex justify-between items-end">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Scratch & Earn</p>
-            <div className="bg-game-purple/20 p-2 rounded-full">
-              <svg className="h-8 w-8 text-game-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="5" width="18" height="14" rx="2" />
-                <path d="M3 10h18" />
-                <path d="M7 15h2" />
-                <path d="M11 15h6" />
-              </svg>
-            </div>
-          </div>
-        </Card>
+        <SpinWheel />
+        <ScratchCard />
       </div>
 
       {/* Play Games */}

@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAdmin } from '@/contexts/AdminContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ interface Withdrawal {
   id: string;
   amount: number;
   coins_spent: number;
-  payment_detail: string; // Changed from upi_id to match database schema
+  payment_detail: string;
   status: string;
   requested_at: string;
   processed_at?: string;
@@ -27,6 +27,7 @@ const WithdrawalPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getConversionRateInINR } = useAdmin();
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState('');
   const [upiId, setUpiId] = useState('');
@@ -81,12 +82,12 @@ const WithdrawalPage = () => {
       return;
     }
     
-    // Minimum withdrawal amount (500 coins = ₹5)
+    // Minimum withdrawal amount (500 coins)
     const minCoins = 500;
     if (coinAmount < minCoins) {
       toast({
         title: "Minimum Withdrawal",
-        description: `Minimum withdrawal amount is ${minCoins} coins (₹${(minCoins * coinToRupeeRate).toFixed(2)})`,
+        description: `Minimum withdrawal amount is ${minCoins} coins (₹${getConversionRateInINR(minCoins)})`,
         variant: "destructive",
       });
       return;
@@ -129,16 +130,16 @@ const WithdrawalPage = () => {
       }
       
       // Create withdrawal record in Supabase for registered users
-      const rupeeAmount = coinAmount * coinToRupeeRate;
+      const rupeeAmount = getConversionRateInINR(coinAmount);
       const { data, error } = await supabase
         .from('withdrawals')
         .insert([
           {
             user_id: user.id,
-            coins_spent: coinAmount,  // Changed from coins to coins_spent
+            coins_spent: coinAmount,
             amount: rupeeAmount,
-            payment_detail: upiId,    // Changed from upi_id to payment_detail
-            method: 'upi',            // Added method field
+            payment_detail: upiId,
+            method: 'upi',
             status: 'pending'
           }
         ])
@@ -201,7 +202,7 @@ const WithdrawalPage = () => {
             </svg>
             <div>
               <h2 className="text-4xl font-bold">{user.coins}</h2>
-              <p className="text-sm text-gray-500">≈ ₹{(user.coins * coinToRupeeRate).toFixed(2)}</p>
+              <p className="text-sm text-gray-500">≈ ₹{getConversionRateInINR(user.coins).toFixed(2)}</p>
             </div>
           </div>
           
@@ -219,7 +220,7 @@ const WithdrawalPage = () => {
               />
               {amount && (
                 <p className="text-xs text-gray-500 mt-1">
-                  ≈ ₹{(parseInt(amount || '0') * coinToRupeeRate).toFixed(2)}
+                  ≈ ₹{getConversionRateInINR(parseInt(amount || '0')).toFixed(2)}
                 </p>
               )}
             </div>
