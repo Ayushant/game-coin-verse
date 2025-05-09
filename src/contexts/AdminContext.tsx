@@ -9,6 +9,7 @@ interface AdminContextType {
   isAdmin: boolean;
   loading: boolean;
   conversionRate: number;
+  minWithdrawalCoins: number;
   updateConversionRate: (rate: number) => Promise<void>;
   getConversionRateInINR: (coins: number) => number;
   getCoinsFromINR: (inr: number) => number;
@@ -23,6 +24,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAdmin, setIsAdmin] = useState<boolean>(true); // Set to true by default for hardcoded admin credentials
   const [loading, setLoading] = useState<boolean>(false);
   const [conversionRate, setConversionRate] = useState<number>(100); // Default: 100 coins = 1 INR
+  const [minWithdrawalCoins, setMinWithdrawalCoins] = useState<number>(500); // Default: 500 coins minimum
   const { toast } = useToast();
 
   // Load conversion rate from settings
@@ -43,6 +45,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (data) {
           setConversionRate(data.coins_to_inr);
+          // Load minimum withdrawal coins, default to 500 if not set
+          setMinWithdrawalCoins(data.min_withdrawal_coins || 500);
         }
       } catch (error) {
         console.error('Error loading conversion rate:', error);
@@ -59,6 +63,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
         .from('settings')
         .insert({
           coins_to_inr: rate,
+          min_withdrawal_coins: minWithdrawalCoins,
           updated_at: new Date().toISOString()
         });
 
@@ -98,6 +103,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
         isAdmin,
         loading,
         conversionRate,
+        minWithdrawalCoins,
         updateConversionRate,
         getConversionRateInINR,
         getCoinsFromINR

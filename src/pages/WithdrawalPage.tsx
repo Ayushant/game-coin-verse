@@ -28,7 +28,7 @@ const WithdrawalPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getConversionRateInINR } = useAdmin();
+  const { getConversionRateInINR, minWithdrawalCoins } = useAdmin();
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [amount, setAmount] = useState('');
@@ -98,12 +98,11 @@ const WithdrawalPage = () => {
       return;
     }
     
-    // Minimum withdrawal amount (500 coins)
-    const minCoins = 500;
-    if (coinAmount < minCoins) {
+    // Use the dynamic minimum withdrawal amount from context
+    if (coinAmount < minWithdrawalCoins) {
       toast({
         title: "Minimum Withdrawal",
-        description: `Minimum withdrawal amount is ${minCoins} coins (₹${getConversionRateInINR(minCoins)})`,
+        description: `Minimum withdrawal amount is ${minWithdrawalCoins} coins (₹${getConversionRateInINR(minWithdrawalCoins)})`,
         variant: "destructive",
       });
       return;
@@ -234,7 +233,7 @@ const WithdrawalPage = () => {
                 type="number" 
                 value={amount} 
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="Minimum 500 coins"
+                placeholder={`Minimum ${minWithdrawalCoins} coins`}
                 className="mt-1"
                 required
               />
