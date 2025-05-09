@@ -44,9 +44,10 @@ const Login = () => {
       // For admin login, use the actual email in the database
       const loginEmail = isAdmin ? 'project75database75@gmail.com' : data.email;
       
-      const { error } = await signIn(loginEmail, isAdmin ? data.password : data.password);
+      const { error } = await signIn(loginEmail, data.password);
 
       if (error) {
+        console.error('Login error details:', error);
         toast({
           title: 'Login Failed',
           description: error.message,

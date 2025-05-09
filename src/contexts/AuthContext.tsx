@@ -136,6 +136,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
     try {
+      // First, check if this is the admin account attempting to log in
+      const isAdmin = email === 'project75database75@gmail.com';
+      
+      if (isAdmin) {
+        // Call a Supabase function to ensure the admin account is confirmed before login
+        await supabase.rpc('auto_confirm_admin', { admin_email: email });
+        
+        // Small delay to ensure the confirmation takes effect
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (!error) {
