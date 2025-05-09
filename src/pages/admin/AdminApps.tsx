@@ -211,8 +211,9 @@ const AdminApps = () => {
   const onSubmit = async (values: AppFormValues) => {
     try {
       setSubmitting(true);
+      console.log('Form values:', values);
       
-      // Prepare the app data
+      // Prepare the app data with proper casting for payment_method
       const appData = {
         name: values.name,
         description: values.description,
@@ -227,6 +228,8 @@ const AdminApps = () => {
           : null,
         payment_instructions: values.payment_instructions || null,
       };
+
+      console.log('App data to submit:', appData);
       
       if (selectedApp) {
         // Update existing app
@@ -238,7 +241,10 @@ const AdminApps = () => {
           })
           .eq('id', selectedApp.id);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
         
         // Update local state
         setApps(apps.map(app => 
@@ -253,12 +259,18 @@ const AdminApps = () => {
         });
       } else {
         // Create new app
+        console.log('Creating new app with data:', appData);
         const { data, error } = await supabase
           .from('paid_apps')
-          .insert([appData])
+          .insert(appData)
           .select();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
+        
+        console.log('Insert response:', data);
         
         // Add new app to local state with proper typing
         if (data && data[0]) {
