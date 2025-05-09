@@ -22,8 +22,7 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
     // Only run when component is mounted and DOM is ready
     if (!adRef.current) return;
     
-    // Wait a moment to ensure the container has proper dimensions
-    const timer = setTimeout(() => {
+    const loadAd = () => {
       try {
         // Create the ad element
         const adInsElement = document.createElement('ins');
@@ -36,7 +35,11 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
         
         // Clear the container and append the ad
         if (adRef.current) {
-          adRef.current.innerHTML = '';
+          // Make sure to remove any child nodes properly
+          while (adRef.current.firstChild) {
+            adRef.current.removeChild(adRef.current.firstChild);
+          }
+          
           adRef.current.appendChild(adInsElement);
           
           // Push the ad - using window object explicitly
@@ -48,9 +51,20 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
       } catch (error) {
         console.error('Error initializing banner ad:', error);
       }
-    }, 500); // Small delay to ensure container is properly rendered
+    };
     
-    return () => clearTimeout(timer);
+    // Use a small delay to ensure React has completed its updates
+    const timer = setTimeout(loadAd, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      // Clean up properly on unmount
+      if (adRef.current) {
+        while (adRef.current.firstChild) {
+          adRef.current.removeChild(adRef.current.firstChild);
+        }
+      }
+    };
   }, [adClient, adSlot]);
 
   // Don't render anything on non-supported platforms
