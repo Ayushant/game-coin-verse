@@ -15,43 +15,42 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
   adSlot = '7271840531'
 }) => {
   const adRef = useRef<HTMLDivElement>(null);
-  const isAndroid = Capacitor.getPlatform() === 'android';
   const [isLoaded, setIsLoaded] = useState(false);
+  const uniqueId = useRef(`ad-${Math.random().toString(36).substring(2, 9)}`);
   
   useEffect(() => {
-    // Only run when component is mounted and DOM is ready
-    if (!adRef.current) return;
-    
-    // Create a unique ID for this ad slot to avoid conflicts
-    const adId = `ad-${Math.random().toString(36).substring(2, 9)}`;
+    // Only try to load ads in browser environments
+    if (typeof window === 'undefined') return;
     
     const loadAd = () => {
       try {
-        // Clear existing content
-        if (adRef.current) {
-          adRef.current.innerHTML = '';
-          
-          // Create the ad element with a unique ID
-          const adInsElement = document.createElement('ins');
-          adInsElement.id = adId;
-          adInsElement.className = 'adsbygoogle';
-          adInsElement.style.display = 'block';
-          adInsElement.style.width = '100%';
-          adInsElement.style.height = '90px';
-          adInsElement.setAttribute('data-ad-client', adClient);
-          adInsElement.setAttribute('data-ad-slot', adSlot);
-          
-          // Append the ad to the container
-          adRef.current.appendChild(adInsElement);
-          
-          // Push the ad command
-          try {
-            ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+        if (!adRef.current) return;
+        
+        // Safely clean up previous content
+        adRef.current.innerHTML = '';
+        
+        // Create ad element with unique ID to avoid conflicts
+        const adInsElement = document.createElement('ins');
+        adInsElement.id = uniqueId.current;
+        adInsElement.className = 'adsbygoogle';
+        adInsElement.style.display = 'block';
+        adInsElement.style.width = '100%';
+        adInsElement.style.height = '90px';
+        adInsElement.setAttribute('data-ad-client', adClient);
+        adInsElement.setAttribute('data-ad-slot', adSlot);
+        
+        // Append the ad to container
+        adRef.current.appendChild(adInsElement);
+        
+        // Push the ad command
+        try {
+          if (window.adsbygoogle) {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
             console.log('Banner ad pushed to queue');
             setIsLoaded(true);
-          } catch (pushError) {
-            console.error('Error pushing ad to queue:', pushError);
           }
+        } catch (pushError) {
+          console.error('Error pushing ad to queue:', pushError);
         }
       } catch (error) {
         console.error('Error initializing banner ad:', error);
@@ -59,21 +58,20 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
     };
     
     // Short delay to ensure React rendering is complete
-    const timer = setTimeout(loadAd, 100);
+    const timer = setTimeout(loadAd, 200);
     
-    // Cleanup function
     return () => {
       clearTimeout(timer);
       
-      // Safe cleanup - just clear the HTML content
+      // Safe cleanup - use innerHTML rather than removeChild
       if (adRef.current) {
         adRef.current.innerHTML = '';
       }
     };
   }, [adClient, adSlot]);
 
-  // Don't render anything on non-supported platforms
-  if (!isAndroid && Capacitor.isNativePlatform()) return null;
+  // Don't render on non-supported platforms
+  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() !== 'android') return null;
 
   return (
     <Card className={`p-2 overflow-hidden ${className}`}>

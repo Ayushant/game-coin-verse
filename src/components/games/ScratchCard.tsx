@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import BannerAdComponent from '@/components/ads/BannerAdComponent';
@@ -11,6 +11,13 @@ interface ScratchCardProps {
 const ScratchCard: React.FC<ScratchCardProps> = ({ onComplete }) => {
   const [isScratched, setIsScratched] = useState(false);
   const [prize, setPrize] = useState(0);
+  // Use ref for a stable key that changes only when isScratched changes
+  const adKey = useRef(`ad-${Math.random().toString(36).substring(2, 9)}`);
+  
+  useEffect(() => {
+    // Update the ad key when isScratched changes
+    adKey.current = `ad-${isScratched ? 'scratched' : 'unscratched'}-${Math.random().toString(36).substring(2, 9)}`;
+  }, [isScratched]);
   
   const handleScratch = () => {
     // Generate a random prize (between 5 and 50)
@@ -59,8 +66,8 @@ const ScratchCard: React.FC<ScratchCardProps> = ({ onComplete }) => {
         )}
       </div>
       
-      {/* Ad container with key to force re-render when card state changes */}
-      <div className="mt-4" key={isScratched ? 'scratched' : 'unscratched'}>
+      {/* Ad container with stable key based on scratch state to force proper re-render */}
+      <div className="mt-4" key={adKey.current}>
         <BannerAdComponent adSlot="7271840531" />
       </div>
     </Card>
