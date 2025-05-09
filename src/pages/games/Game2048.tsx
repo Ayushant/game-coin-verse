@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 
 type Board = number[][];
@@ -16,9 +16,12 @@ const Game2048 = () => {
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
   const [highestTile, setHighestTile] = useState(0);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
   const { user, updateUserCoins } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Redirect to login if no user
@@ -67,6 +70,56 @@ const Game2048 = () => {
     setGameOver(false);
     setGameWon(false);
     setHighestTile(0);
+  };
+
+  // Touch handlers for swipe detection
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (gameOver || gameWon) return;
+    setTouchEnd(null);
+    setTouchStart({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (gameOver || gameWon || !touchStart) return;
+    setTouchEnd({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    });
+  };
+
+  const handleTouchEnd = () => {
+    if (gameOver || gameWon || !touchStart || !touchEnd) return;
+    
+    const deltaX = touchEnd.x - touchStart.x;
+    const deltaY = touchEnd.y - touchStart.y;
+    
+    const minSwipeDistance = 50; // Minimum distance for swipe to register
+    
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX > 0) {
+          move('right');
+        } else {
+          move('left');
+        }
+      }
+    } else {
+      // Vertical swipe
+      if (Math.abs(deltaY) > minSwipeDistance) {
+        if (deltaY > 0) {
+          move('down');
+        } else {
+          move('up');
+        }
+      }
+    }
+    
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   const addRandomTile = (board: Board) => {
@@ -300,12 +353,17 @@ const Game2048 = () => {
           </Button>
         </div>
         
-        <div className="grid grid-cols-4 gap-2 bg-gray-300 dark:bg-gray-700 p-2 rounded-lg mb-4">
+        <div 
+          className="grid grid-cols-4 gap-2 bg-gray-300 dark:bg-gray-700 p-2 rounded-lg mb-4"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           {board.map((row, i) => (
             row.map((cell, j) => (
               <div
                 key={`${i}-${j}`}
-                className={`w-16 h-16 flex items-center justify-center ${getTileColor(cell)} ${getFontSize(cell)} font-bold rounded transition-all`}
+                className={`w-16 h-16 sm:w-16 sm:h-16 flex items-center justify-center ${getTileColor(cell)} ${getFontSize(cell)} font-bold rounded transition-all`}
               >
                 {cell !== 0 ? cell : ''}
               </div>
@@ -313,53 +371,56 @@ const Game2048 = () => {
           ))}
         </div>
         
-        {/* Mobile controls */}
-        <div className="grid grid-cols-3 gap-2 max-w-[180px] mx-auto mt-6">
-          <div className="col-start-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="w-14 h-14" 
-              onClick={() => move('up')}
-            >
-              <ArrowUp className="h-6 w-6" />
-            </Button>
+        {/* Mobile controls - only show on mobile */}
+        {isMobile && (
+          <div className="grid grid-cols-3 gap-2 max-w-[180px] mx-auto mt-6">
+            <div className="col-start-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="w-14 h-14" 
+                onClick={() => move('up')}
+              >
+                <ArrowUp className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="col-start-1">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="w-14 h-14" 
+                onClick={() => move('left')}
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="col-start-3">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="w-14 h-14" 
+                onClick={() => move('right')}
+              >
+                <ArrowRight className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="col-start-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="w-14 h-14" 
+                onClick={() => move('down')}
+              >
+                <ArrowDown className="h-6 w-6" />
+              </Button>
+            </div>
           </div>
-          <div className="col-start-1">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="w-14 h-14" 
-              onClick={() => move('left')}
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-          </div>
-          <div className="col-start-3">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="w-14 h-14" 
-              onClick={() => move('right')}
-            >
-              <ArrowRight className="h-6 w-6" />
-            </Button>
-          </div>
-          <div className="col-start-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="w-14 h-14" 
-              onClick={() => move('down')}
-            >
-              <ArrowDown className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
       
       <div className="mt-4 text-center text-sm text-white/80">
-        <p>{gameOver ? 'Game over! Start a new game to continue.' : 'Swipe or use arrow keys to move tiles.'}</p>
+        <p>{gameOver ? 'Game over! Start a new game to continue.' : 
+           isMobile ? 'Swipe to move tiles or use the controls below.' : 'Swipe or use arrow keys to move tiles.'}</p>
       </div>
       
       {(gameOver || gameWon) && (

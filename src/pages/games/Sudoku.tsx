@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Grid3X3 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,6 +27,7 @@ const Sudoku = () => {
   const { user, updateUserCoins } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Initialize game
   useEffect(() => {
@@ -170,6 +172,14 @@ const Sudoku = () => {
     return true;
   };
 
+  // Determine cell size based on device
+  const getCellSize = () => {
+    if (isMobile) {
+      return "w-7 h-7 text-sm";
+    }
+    return "w-8 h-8 sm:w-10 sm:h-10 text-lg";
+  };
+
   if (!user) return null;
 
   return (
@@ -217,7 +227,7 @@ const Sudoku = () => {
           </TabsList>
         </Tabs>
         
-        {/* Sudoku Board */}
+        {/* Sudoku Board - adjusted for mobile */}
         <div className="flex justify-center mb-4">
           <div className="grid grid-cols-9 gap-0.5 bg-gray-300 dark:bg-gray-700 p-0.5 border-2 border-gray-800 dark:border-gray-500">
             {board.map((row, rowIndex) =>
@@ -234,12 +244,12 @@ const Sudoku = () => {
                 return (
                   <div
                     key={`${rowIndex}-${colIndex}`}
-                    className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center ${borderRight} ${borderBottom}
+                    className={`${getCellSize()} flex items-center justify-center ${borderRight} ${borderBottom}
                       ${isFixed ? 'bg-gray-200 dark:bg-gray-600 font-bold' : 'bg-white dark:bg-gray-800'}
                       ${isSelected ? 'bg-blue-100 dark:bg-blue-900' : ''}
                       ${isSameVal ? 'bg-blue-50 dark:bg-blue-800/50' : ''}
                       ${isInvalid ? 'text-red-500' : 'text-black dark:text-white'}
-                      cursor-pointer text-lg`}
+                      cursor-pointer`}
                     onClick={() => handleCellClick(rowIndex, colIndex)}
                   >
                     {cell !== 0 ? cell : ''}
@@ -250,14 +260,15 @@ const Sudoku = () => {
           </div>
         </div>
         
-        {/* Number Input Pad */}
+        {/* Number Input Pad - adjusted for mobile */}
         <div className="grid grid-cols-9 gap-1 mb-4">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
             <button
               key={num}
               onClick={() => handleNumberInput(num)}
-              className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 dark:bg-gray-600 rounded font-bold text-lg
-                hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+              className={`${isMobile ? 'w-7 h-9' : 'w-8 h-8 sm:w-10 sm:h-10'} bg-gray-200 dark:bg-gray-600 rounded font-bold 
+                ${isMobile ? 'text-base' : 'text-lg'}
+                hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors`}
               disabled={gameOver}
             >
               {num}

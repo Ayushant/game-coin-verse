@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.4845c753a8904842a19954b500b269ea',
+  appId: 'app.lovable.4845c753a8904842a199-54b500b269ea',
   appName: 'WinWitty',
   webDir: 'dist',
   server: {
@@ -15,17 +15,19 @@ const config: CapacitorConfig = {
       keystoreAlias: null
     }
   },
-  // Add iOS configuration
   ios: {
     contentInset: 'automatic'
   },
-  // Improve app stability with these settings
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: "#6b46c1",
       showSpinner: true,
       spinnerColor: "#ffffff"
+    },
+    // Mobile orientation settings for games
+    CapacitorScreenOrientation: {
+      lockOrientationToPortrait: true
     }
   }
 };
