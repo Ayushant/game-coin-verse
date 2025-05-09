@@ -1,136 +1,139 @@
-
-import { useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Grid3X3, Calculator, Grid, Coffee } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import CoinDisplay from '@/components/ui/CoinDisplay';
+import { Card } from '@/components/ui/card';
+import BannerAdComponent from '@/components/ads/BannerAdComponent';
+
+interface Game {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  route: string;
+}
+
+const gameList: Game[] = [
+  {
+    id: 'tictactoe',
+    title: 'Tic Tac Toe',
+    description: 'A classic game of Xs and Os.',
+    imageUrl: '/images/tic-tac-toe.png',
+    route: '/games/tictactoe',
+  },
+  {
+    id: '2048',
+    title: '2048',
+    description: 'Join the numbers to get to 2048!',
+    imageUrl: '/images/2048.png',
+    route: '/games/2048',
+  },
+  {
+    id: 'sudoku',
+    title: 'Sudoku',
+    description: 'A number-placing puzzle.',
+    imageUrl: '/images/sudoku.png',
+    route: '/games/sudoku',
+  },
+  {
+    id: 'mathchallenge',
+    title: 'Math Challenge',
+    description: 'Test your math skills.',
+    imageUrl: '/images/math.png',
+    route: '/games/mathchallenge',
+  },
+  {
+    id: 'blockpuzzle',
+    title: 'Block Puzzle',
+    description: 'Fit the blocks together.',
+    imageUrl: '/images/block-puzzle.png',
+    route: '/games/blockpuzzle',
+  },
+  {
+    id: 'memorymatch',
+    title: 'Memory Match',
+    description: 'Match the pairs.',
+    imageUrl: '/images/memory-match.png',
+    route: '/games/memorymatch',
+  },
+];
 
 const GamesPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Redirect to login if no user
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
-  if (!user) return null;
-
-  const games = [
-    { 
-      id: 'tictactoe',
-      name: 'Tic Tac Toe', 
-      description: 'Classic game of X and O', 
-      reward: 5,
-      color: 'from-purple-500 to-indigo-600',
-      icon: (
-        <svg className="h-10 w-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="9" y1="3" x2="9" y2="21" />
-          <line x1="15" y1="3" x2="15" y2="21" />
-          <line x1="3" y1="9" x2="21" y2="9" />
-          <line x1="3" y1="15" x2="21" y2="15" />
-        </svg>
-      )
-    },
-    { 
-      id: '2048',
-      name: '2048', 
-      description: 'Merge tiles to reach 2048', 
-      reward: 10,
-      color: 'from-amber-500 to-orange-600',
-      icon: (
-        <div className="grid grid-cols-2 gap-1">
-          <div className="h-5 w-5 bg-white/90 rounded-sm flex items-center justify-center text-amber-500 text-xs font-bold">2</div>
-          <div className="h-5 w-5 bg-white/80 rounded-sm flex items-center justify-center text-amber-500 text-xs font-bold">4</div>
-          <div className="h-5 w-5 bg-white/70 rounded-sm flex items-center justify-center text-amber-500 text-xs font-bold">8</div>
-          <div className="h-5 w-5 bg-white/90 rounded-sm flex items-center justify-center text-amber-500 text-xs font-bold">16</div>
-        </div>
-      )
-    },
-    { 
-      id: 'sudoku',
-      name: 'Sudoku', 
-      description: 'Fill the grid with numbers', 
-      reward: 15,
-      color: 'from-blue-500 to-blue-600',
-      icon: (
-        <Grid3X3 className="h-10 w-10 text-white" />
-      )
-    },
-    { 
-      id: 'mathchallenge',
-      name: 'Math Challenge', 
-      description: 'Test your math skills', 
-      reward: 10,
-      color: 'from-emerald-500 to-teal-600',
-      icon: (
-        <Calculator className="h-10 w-10 text-white" />
-      )
-    },
-    { 
-      id: 'blockpuzzle',
-      name: 'Block Puzzle', 
-      description: 'Clear rows with blocks', 
-      reward: 15,
-      color: 'from-pink-500 to-rose-600',
-      icon: (
-        <Grid className="h-10 w-10 text-white" />
-      )
-    },
-    { 
-      id: 'memorymatch',
-      name: 'Memory Match', 
-      description: 'Find all the matching pairs', 
-      reward: 12,
-      color: 'from-indigo-500 to-violet-600',
-      icon: (
-        <Coffee className="h-10 w-10 text-white" />
-      )
-    },
-  ];
+  
+  const featuredGame = gameList[0];
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Games</h1>
-        <CoinDisplay />
-      </div>
-
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-        <Input 
-          className="pl-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-0 rounded-xl shadow-md"
-          placeholder="Search games..."
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        {games.map((game) => (
-          <div 
-            key={game.id}
-            className={`bg-gradient-to-br ${game.color} rounded-xl p-4 aspect-square shadow-lg flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform`}
-            onClick={() => navigate(`/games/${game.id}`)}
-          >
-            <div className="bg-white/10 w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm">
-              {game.icon}
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white mb-1">{game.name}</h3>
-              <p className="text-xs text-white/80">{game.description}</p>
-              <div className="flex items-center mt-2">
-                <svg className="h-4 w-4 text-game-gold mr-1" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
-                <span className="text-white text-sm">Win {game.reward} coins</span>
-              </div>
-            </div>
+      <h1 className="text-2xl font-bold mb-6 text-white">Games</h1>
+      
+      {/* Banner Ad at top of games page */}
+      <BannerAdComponent className="mb-4" />
+      
+      {/* Featured Game */}
+      <Card className="game-card mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="game-card-header">Featured Game</h2>
+        </div>
+        <div className="flex flex-col md:flex-row items-center">
+          <img
+            src={featuredGame.imageUrl}
+            alt={featuredGame.title}
+            className="w-full md:w-1/2 rounded-lg mb-3 md:mb-0 md:mr-4"
+          />
+          <div>
+            <h3 className="text-lg font-semibold mb-2 text-white">{featuredGame.title}</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              {featuredGame.description}
+            </p>
+            <button
+              className="bg-game-purple text-white px-4 py-2 rounded-full"
+              onClick={() => navigate(featuredGame.route)}
+            >
+              Play Now
+            </button>
           </div>
-        ))}
+        </div>
+      </Card>
+      
+      {/* All Games */}
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-3 text-white">All Games</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {gameList.map((game) => (
+            <GameCard
+              key={game.id}
+              game={game}
+              onClick={() => navigate(game.route)}
+            />
+          ))}
+        </div>
       </div>
+      
+      {/* Banner Ad at bottom of games page */}
+      <BannerAdComponent className="mt-6" />
     </div>
+  );
+};
+
+interface GameCardProps {
+  game: Game;
+  onClick: () => void;
+}
+
+const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
+  return (
+    <Card className="game-card cursor-pointer" onClick={onClick}>
+      <img
+        src={game.imageUrl}
+        alt={game.title}
+        className="w-full h-24 object-cover rounded-t-lg mb-2"
+      />
+      <div className="p-3">
+        <h3 className="text-md font-semibold text-white">{game.title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {game.description}
+        </p>
+      </div>
+    </Card>
   );
 };
 

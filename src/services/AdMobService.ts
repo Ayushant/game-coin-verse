@@ -66,6 +66,38 @@ class AdMobService {
       console.error('Error showing ad:', error);
     }
   }
+  
+  async showBanner(adUnitId: string): Promise<void> {
+    if (!this.isAndroid) return;
+    
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+      
+      // Prepare and show banner ad
+      await AdMob.showBanner({
+        adId: adUnitId,
+        position: BannerAdPosition.BOTTOM_CENTER,
+        margin: 0,
+      });
+      
+      console.log('Banner ad shown successfully');
+    } catch (error) {
+      console.error('Error showing banner ad:', error);
+    }
+  }
+  
+  async hideBanner(): Promise<void> {
+    if (!this.isAndroid) return;
+    
+    try {
+      await AdMob.hideBanner();
+      console.log('Banner ad hidden');
+    } catch (error) {
+      console.error('Error hiding banner ad:', error);
+    }
+  }
 
   isAvailable(): boolean {
     return this.isAndroid && this.initialized;

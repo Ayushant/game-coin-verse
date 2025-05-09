@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 import SpinWheel from '@/components/games/SpinWheel';
 import NativeAdComponent from '@/components/ads/NativeAdComponent';
+import BannerAdComponent from '@/components/ads/BannerAdComponent';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -35,6 +36,9 @@ const Dashboard = () => {
           <Bell className="h-6 w-6 text-white cursor-pointer" />
         </div>
       </div>
+
+      {/* Banner Ad at top of dashboard */}
+      <BannerAdComponent className="mb-4" />
 
       {/* Daily Bonus & Missions */}
       <Card className="game-card p-4 mb-4">
@@ -106,6 +110,9 @@ const Dashboard = () => {
           />
         </div>
       </Card>
+
+      {/* Banner Ad before Download Apps section */}
+      <BannerAdComponent className="mb-4" />
 
       {/* Download Apps */}
       <Card className="game-card p-4 mb-4">

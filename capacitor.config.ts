@@ -15,6 +15,10 @@ const config: CapacitorConfig = {
       nativeAdOptions: {
         adSize: 'MEDIUM_RECTANGLE'
       }
+    },
+    AdMob: {
+      appId: 'ca-app-pub-3577415915119257~8633023667',
+      publisherId: 'ca-pub-3577415915119257'
     }
   },
   android: {

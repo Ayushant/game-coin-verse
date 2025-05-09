@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Card } from '@/components/ui/card';
 
