@@ -45,8 +45,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (data) {
           setConversionRate(data.coins_to_inr);
-          // Load minimum withdrawal coins, default to 500 if not set
-          setMinWithdrawalCoins(data.min_withdrawal_coins || 500);
+          // Check if min_withdrawal_coins exists in the data before using it
+          if ('min_withdrawal_coins' in data && data.min_withdrawal_coins !== null) {
+            setMinWithdrawalCoins(data.min_withdrawal_coins);
+          } else {
+            // Default to 500 if not set
+            setMinWithdrawalCoins(500);
+          }
         }
       } catch (error) {
         console.error('Error loading conversion rate:', error);

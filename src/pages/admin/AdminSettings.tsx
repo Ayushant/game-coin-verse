@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -43,7 +42,13 @@ const AdminSettings = () => {
 
         if (data) {
           setNewRate(data.coins_to_inr);
-          setMinCoins(data.min_withdrawal_coins || 500);
+          // Check if min_withdrawal_coins exists in the data
+          if ('min_withdrawal_coins' in data && data.min_withdrawal_coins !== null) {
+            setMinCoins(data.min_withdrawal_coins);
+          } else {
+            // Default to 500 if not set
+            setMinCoins(500);
+          }
         }
       } catch (error) {
         console.error('Error loading settings:', error);

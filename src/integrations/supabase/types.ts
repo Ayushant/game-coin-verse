@@ -246,18 +246,21 @@ export type Database = {
           coins_to_inr: number
           created_at: string
           id: string
+          min_withdrawal_coins: number | null
           updated_at: string
         }
         Insert: {
           coins_to_inr: number
           created_at?: string
           id?: string
+          min_withdrawal_coins?: number | null
           updated_at?: string
         }
         Update: {
           coins_to_inr?: number
           created_at?: string
           id?: string
+          min_withdrawal_coins?: number | null
           updated_at?: string
         }
         Relationships: []
