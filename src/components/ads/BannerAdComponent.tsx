@@ -17,6 +17,7 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
   const adRef = useRef<HTMLDivElement>(null);
   const isAndroid = Capacitor.getPlatform() === 'android';
   const [isLoaded, setIsLoaded] = useState(false);
+  const [adElement, setAdElement] = useState<HTMLElement | null>(null);
   
   useEffect(() => {
     // Only run when component is mounted and DOM is ready
@@ -35,7 +36,10 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
         
         // Clear the container and append the ad
         if (adRef.current) {
-          // Make sure to remove any child nodes properly
+          // Store reference to the ad element to properly clean it up later
+          setAdElement(adInsElement);
+          
+          // Make sure the container is empty before adding a new ad
           while (adRef.current.firstChild) {
             adRef.current.removeChild(adRef.current.firstChild);
           }
@@ -58,10 +62,13 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
     
     return () => {
       clearTimeout(timer);
-      // Clean up properly on unmount
-      if (adRef.current) {
-        while (adRef.current.firstChild) {
-          adRef.current.removeChild(adRef.current.firstChild);
+      
+      // Clean up properly on unmount - only remove the element if it exists and is a child of adRef
+      if (adRef.current && adElement && adRef.current.contains(adElement)) {
+        try {
+          adRef.current.removeChild(adElement);
+        } catch (error) {
+          console.error('Error removing ad element:', error);
         }
       }
     };
