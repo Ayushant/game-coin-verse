@@ -69,9 +69,15 @@ const Dashboard = () => {
       </Card>
 
       {/* Spin Wheel & Scratch Card */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <SpinWheel />
-        <ScratchCard />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+          <SpinWheel />
+        </div>
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+          <ScratchCard />
+        </div>
       </div>
 
       {/* Play Games */}
@@ -125,10 +131,10 @@ interface GamePreviewProps {
 const GamePreview = ({ title, coins, onClick }: GamePreviewProps) => {
   return (
     <div 
-      className="flex-shrink-0 w-24 cursor-pointer"
+      className="flex-shrink-0 w-24 cursor-pointer transition-transform hover:scale-105"
       onClick={onClick}
     >
-      <div className="bg-game-purple/20 h-24 w-24 rounded-lg mb-2 flex items-center justify-center">
+      <div className="bg-game-purple/20 h-24 w-24 rounded-lg mb-2 flex items-center justify-center shadow-md">
         {title === 'Tic Tac Toe' ? (
           <svg className="h-12 w-12 text-game-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="9" y1="3" x2="9" y2="21" />
