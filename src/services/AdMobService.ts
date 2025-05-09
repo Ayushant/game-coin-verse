@@ -1,6 +1,6 @@
 
 import { Capacitor } from '@capacitor/core';
-import { AdMob, AdOptions, AdLoadInfo, AdMobRewardItem, RewardAdOptions, AdMobBannerSize } from '@capacitor-community/admob';
+import { AdMob, AdOptions, AdLoadInfo, AdMobRewardItem, RewardAdOptions, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
 
 class AdMobService {
   private initialized = false;
@@ -18,7 +18,7 @@ class AdMobService {
 
     try {
       await AdMob.initialize({
-        requestTrackingAuthorization: false,
+        // requestTrackingAuthorization is not a valid option
         testingDevices: ['EMULATOR'],
         initializeForTesting: true,
       });
@@ -38,13 +38,6 @@ class AdMobService {
         await this.initialize();
       }
       
-      const options = {
-        adId: adUnitId,
-        nativeAdOptions: {
-          adSize: AdMobBannerSize.MEDIUM_RECTANGLE,
-        },
-      };
-      
       // Find the container element
       const container = document.querySelector(containerSelector);
       if (!container) {
@@ -52,23 +45,25 @@ class AdMobService {
         return;
       }
       
-      // Load ad
-      await AdMob.prepareInterstitial({
-        adId: adUnitId,
-      });
-      
-      const adLoadInfo = await AdMob.loadInterstitial();
-      
       // Style the container
       container.classList.add('ad-container');
       container.innerHTML = '<div class="ad-placeholder">Advertisement</div>';
       
-      // Show ad
+      // For native ads, we'll use interstitial as a workaround
+      // since native ads aren't directly supported in the same way
+      const options = {
+        adId: adUnitId,
+      };
+      
+      // Prepare and show interstitial ad
+      await AdMob.prepareInterstitial(options);
+      
+      // Show the interstitial when it's ready
       await AdMob.showInterstitial();
       console.log('Ad shown successfully');
       
     } catch (error) {
-      console.error('Error showing native ad:', error);
+      console.error('Error showing ad:', error);
     }
   }
 

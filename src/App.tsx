@@ -36,13 +36,16 @@ import ManualPaymentPage from "./pages/ManualPaymentPage";
 import Index from "./pages/Index";
 import { useEffect } from "react";
 import { adMobService } from "./services/AdMobService";
+import { Capacitor } from "@capacitor/core";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    // Initialize AdMob service
-    adMobService.initialize();
+    // Only initialize AdMob on Android platform
+    if (Capacitor.getPlatform() === 'android') {
+      adMobService.initialize();
+    }
   }, []);
 
   return (

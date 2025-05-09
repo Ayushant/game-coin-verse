@@ -10,6 +10,7 @@ interface NativeAdComponentProps {
 
 const NativeAdComponent: React.FC<NativeAdComponentProps> = ({ className = '' }) => {
   const [adLoaded, setAdLoaded] = useState(false);
+  const [adError, setAdError] = useState<string | null>(null);
   const [isAndroid, setIsAndroid] = useState(false);
   const adUnitId = 'ca-app-pub-3577415915119257/9752640007';
 
@@ -25,6 +26,7 @@ const NativeAdComponent: React.FC<NativeAdComponentProps> = ({ className = '' })
           setAdLoaded(true);
         } catch (error) {
           console.error('Failed to load ad:', error);
+          setAdError(error instanceof Error ? error.message : 'Failed to load advertisement');
         }
       }
     };
@@ -41,8 +43,11 @@ const NativeAdComponent: React.FC<NativeAdComponentProps> = ({ className = '' })
         id="ad-container" 
         className="min-h-[250px] flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg"
       >
-        {!adLoaded && (
+        {!adLoaded && !adError && (
           <p className="text-gray-500 dark:text-gray-400 text-sm">Loading advertisement...</p>
+        )}
+        {adError && (
+          <p className="text-red-500 dark:text-red-400 text-sm">{adError}</p>
         )}
       </div>
     </Card>
