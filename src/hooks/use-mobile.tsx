@@ -10,8 +10,7 @@ export function useIsMobile() {
     const checkMobile = () => {
       // Check for touch capability as well as screen size
       const isTouchDevice = ('ontouchstart' in window) || 
-        (navigator.maxTouchPoints > 0) || 
-        (navigator.msMaxTouchPoints > 0);
+        (navigator.maxTouchPoints > 0);
       
       const isSmallScreen = window.innerWidth < MOBILE_BREAKPOINT;
       
