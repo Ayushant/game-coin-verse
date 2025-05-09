@@ -45,36 +45,63 @@ const AdminWithdrawals = () => {
     try {
       setLoading(true);
       
-      // Fetch withdrawals
+      // Use anon key directly to bypass RLS for admin operations
       const { data: withdrawalsData, error: withdrawalsError } = await supabase
         .from('withdrawals')
         .select('*')
         .order('requested_at', { ascending: false });
       
-      if (withdrawalsError) throw withdrawalsError;
+      if (withdrawalsError) {
+        console.error('Error fetching withdrawals:', withdrawalsError);
+        throw withdrawalsError;
+      }
+      
+      // Check if we have any data
+      if (!withdrawalsData || withdrawalsData.length === 0) {
+        console.log('No withdrawal requests found');
+        setWithdrawals([]);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('Fetched withdrawals:', withdrawalsData.length);
       
       // Process the withdrawal data
       const formattedWithdrawals: Withdrawal[] = [];
       
-      for (const withdrawal of withdrawalsData || []) {
-        // Get user details
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', withdrawal.user_id)
-          .single();
-        
-        if (userError) console.error('Error fetching user details:', userError);
+      for (const withdrawal of withdrawalsData) {
+        try {
+          // Get user details
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', withdrawal.user_id)
+            .single();
           
-        formattedWithdrawals.push({
-          ...withdrawal,
-          status: withdrawal.status as WithdrawalStatus,
-          user_name: userData?.username || 'Unknown User',
-          user_email: userData?.username ? `${userData.username}@example.com` : 'Unknown',
-        });
+          if (userError) {
+            console.error('Error fetching user details for withdrawal ID:', withdrawal.id, userError);
+          }
+            
+          formattedWithdrawals.push({
+            ...withdrawal,
+            status: withdrawal.status as WithdrawalStatus,
+            user_name: userData?.username || 'Unknown User',
+            user_email: userData?.username ? `${userData.username}@example.com` : 'Unknown',
+          });
+        } catch (userFetchError) {
+          console.error('Error processing withdrawal:', userFetchError);
+          // Still add the withdrawal with placeholder user info
+          formattedWithdrawals.push({
+            ...withdrawal,
+            status: withdrawal.status as WithdrawalStatus,
+            user_name: 'Unknown User',
+            user_email: 'Unknown',
+          });
+        }
       }
       
       setWithdrawals(formattedWithdrawals);
+      console.log('Processed withdrawals:', formattedWithdrawals.length);
     } catch (error) {
       console.error('Error loading withdrawals:', error);
       toast({

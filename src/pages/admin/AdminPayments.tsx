@@ -91,44 +91,74 @@ const AdminPayments = () => {
     try {
       setLoading(true);
       
+      console.log('Fetching manual payments...');
+      
       // Fetch manual payments
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('manual_payments')
         .select('*')
         .order('submitted_at', { ascending: false });
       
-      if (paymentsError) throw paymentsError;
+      if (paymentsError) {
+        console.error('Error fetching manual payments:', paymentsError);
+        throw paymentsError;
+      }
+      
+      console.log('Fetched payments data:', paymentsData?.length || 0);
+      
+      // If no payments found, update state and return
+      if (!paymentsData || paymentsData.length === 0) {
+        setPayments([]);
+        setLoading(false);
+        return;
+      }
       
       // Process the payments data
       const formattedPayments: ManualPayment[] = [];
       
-      for (const payment of paymentsData || []) {
-        // Get app details
-        const { data: appData, error: appError } = await supabase
-          .from('paid_apps')
-          .select('name')
-          .eq('id', payment.app_id)
-          .single();
-        
-        if (appError) console.error('Error fetching app details:', appError);
-        
-        // Get user details - make sure we only select fields that exist in the profile table
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', payment.user_id)
-          .single();
-        
-        if (userError) console.error('Error fetching user details:', userError);
-        
-        formattedPayments.push({
-          ...payment,
-          app_name: appData?.name || 'Unknown App',
-          user_name: userData?.username || 'Unknown User',
-          status: payment.status as 'pending' | 'approved' | 'rejected',
-        });
+      for (const payment of paymentsData) {
+        try {
+          // Get app details
+          const { data: appData, error: appError } = await supabase
+            .from('paid_apps')
+            .select('name')
+            .eq('id', payment.app_id)
+            .single();
+          
+          if (appError) {
+            console.error('Error fetching app details:', appError);
+          }
+          
+          // Get user details
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', payment.user_id)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user details:', userError);
+          }
+          
+          formattedPayments.push({
+            ...payment,
+            app_name: appData?.name || 'Unknown App',
+            user_name: userData?.username || 'Unknown User',
+            status: payment.status as 'pending' | 'approved' | 'rejected',
+          });
+        } catch (processError) {
+          console.error('Error processing payment:', processError);
+          // Still include the payment with placeholder info
+          formattedPayments.push({
+            ...payment,
+            app_name: 'Unknown App',
+            user_name: 'Unknown User',
+            status: payment.status as 'pending' | 'approved' | 'rejected',
+          });
+        }
       }
       
+      console.log('Processed payments:', formattedPayments.length);
       setPayments(formattedPayments);
     } catch (error) {
       console.error('Error loading payments:', error);
