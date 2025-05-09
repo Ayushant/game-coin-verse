@@ -14,6 +14,19 @@ const config: CapacitorConfig = {
       keystorePath: null,
       keystoreAlias: null
     }
+  },
+  // Add iOS configuration
+  ios: {
+    contentInset: 'automatic'
+  },
+  // Improve app stability with these settings
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: "#6b46c1",
+      showSpinner: true,
+      spinnerColor: "#ffffff"
+    }
   }
 };
 

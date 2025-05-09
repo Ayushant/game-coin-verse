@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ScratchCard = () => {
   const [isRevealed, setIsRevealed] = useState(false);
@@ -11,6 +12,7 @@ const ScratchCard = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { user, updateUserCoins } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Generate a random reward between 5 and 50
   useEffect(() => {
@@ -24,6 +26,19 @@ const ScratchCard = () => {
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    
+    // Set proper device pixel ratio to fix blurry canvas on mobile
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    
+    if (isMobile) {
+      // Adjust canvas size for mobile devices
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+    }
     
     // Fill with a solid color
     ctx.fillStyle = '#6b46c1';
@@ -46,7 +61,7 @@ const ScratchCard = () => {
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.fillText('Scratch to reveal', canvas.width / 2, canvas.height / 2);
-  }, []);
+  }, [isMobile]);
   
   // Scratch logic
   const handleScratch = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -92,11 +107,20 @@ const ScratchCard = () => {
     if (percentage > 50 && !isRevealed) {
       setIsRevealed(true);
       if (user) {
-        updateUserCoins(user.coins + reward);
-        toast({
-          title: "You won!",
-          description: `${reward} coins have been added to your account.`,
-        });
+        try {
+          updateUserCoins(user.coins + reward);
+          toast({
+            title: "You won!",
+            description: `${reward} coins have been added to your account.`,
+          });
+        } catch (error) {
+          console.error("Error updating coins:", error);
+          toast({
+            title: "Error",
+            description: "Failed to add coins. Please try again.",
+            variant: "destructive"
+          });
+        }
       }
     }
   };
@@ -123,8 +147,6 @@ const ScratchCard = () => {
         {/* Scratch overlay */}
         <canvas
           ref={canvasRef}
-          width={300}
-          height={225}
           className="absolute inset-0 w-full h-full cursor-pointer"
           onMouseMove={handleScratch}
           onTouchMove={handleTouchMove}
