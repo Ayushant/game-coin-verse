@@ -6,13 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Bell, Volume2, HelpCircle, Shield, LogOut } from 'lucide-react';
+import { Moon, Bell, Volume2, HelpCircle, Shield, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 
 const SettingsPage = () => {
   const { user, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -50,17 +50,17 @@ const SettingsPage = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              {theme === 'light' ? <Sun className="h-5 w-5 mr-3" /> : <Moon className="h-5 w-5 mr-3" />}
+              <Moon className="h-5 w-5 mr-3" />
               <div>
                 <div className="font-medium">Dark Mode</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {theme === 'dark' ? 'Currently using dark theme' : 'Currently using light theme'}
+                  Currently using dark theme
                 </div>
               </div>
             </div>
             <Switch 
-              checked={theme === 'dark'} 
-              onCheckedChange={toggleTheme} 
+              checked={true} 
+              disabled={true}
             />
           </div>
         </div>

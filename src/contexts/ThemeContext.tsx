@@ -11,19 +11,21 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('light');
+  // Always default to dark theme
+  const [theme, setTheme] = useState<Theme>('dark');
 
-  // Initialize theme from localStorage or system preference
+  // Initialize theme from localStorage but ensure dark theme is applied
   useEffect(() => {
-    const storedTheme = localStorage.getItem('theme') as Theme | null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Always apply dark theme on first load
+    document.documentElement.classList.add('dark');
     
+    // Store the dark theme preference
+    localStorage.setItem('theme', 'dark');
+    
+    // Check if there's any stored preference, but still apply dark theme
+    const storedTheme = localStorage.getItem('theme') as Theme | null;
     if (storedTheme) {
-      setTheme(storedTheme);
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-    } else if (prefersDark) {
       setTheme('dark');
-      document.documentElement.classList.add('dark');
     }
   }, []);
 
@@ -31,7 +33,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark');
+    
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
   return (

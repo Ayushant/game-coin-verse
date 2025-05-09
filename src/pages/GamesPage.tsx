@@ -1,7 +1,7 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import BannerAdComponent from '@/components/ads/BannerAdComponent';
 
 interface Game {
   id: string;
@@ -65,9 +65,6 @@ const GamesPage = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-6 text-white">Games</h1>
       
-      {/* Banner Ad at top of games page */}
-      <BannerAdComponent className="mb-4" />
-      
       {/* Featured Game */}
       <Card className="game-card mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -107,9 +104,6 @@ const GamesPage = () => {
           ))}
         </div>
       </div>
-      
-      {/* Banner Ad at bottom of games page */}
-      <BannerAdComponent className="mt-6" />
     </div>
   );
 };
