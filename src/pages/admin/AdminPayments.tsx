@@ -46,15 +46,15 @@ const AdminPayments = () => {
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
-  // Define columns for the DataTable
+  // Define columns for the DataTable with the correct types
   const columns = [
     { 
       header: "User", 
-      accessorKey: "user_name" 
+      accessorKey: (row: ManualPayment) => row.user_name 
     },
     { 
       header: "App", 
-      accessorKey: "app_name" 
+      accessorKey: (row: ManualPayment) => row.app_name
     },
     { 
       header: "Method", 

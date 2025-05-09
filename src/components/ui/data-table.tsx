@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 interface DataTableProps<T extends Record<string, any>> {
   columns: {
     header: string;
-    accessorKey: keyof T | ((row: T) => React.ReactNode);
+    accessorKey: ((row: T) => React.ReactNode) | keyof T;
     className?: string;
   }[];
   data: T[];

@@ -122,6 +122,7 @@ export type Database = {
           name: string
           payment_instructions: string | null
           payment_method: string
+          updated_at: string | null
         }
         Insert: {
           coin_price?: number | null
@@ -134,6 +135,7 @@ export type Database = {
           name: string
           payment_instructions?: string | null
           payment_method?: string
+          updated_at?: string | null
         }
         Update: {
           coin_price?: number | null
@@ -146,6 +148,7 @@ export type Database = {
           name?: string
           payment_instructions?: string | null
           payment_method?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -157,6 +160,7 @@ export type Database = {
           id: string
           is_guest: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
           username: string | null
         }
         Insert: {
@@ -166,6 +170,7 @@ export type Database = {
           id: string
           is_guest?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
           username?: string | null
         }
         Update: {
@@ -175,6 +180,7 @@ export type Database = {
           id?: string
           is_guest?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
           username?: string | null
         }
         Relationships: []
@@ -332,13 +338,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_confirm_admin: {
+        Args: { admin_email: string }
+        Returns: undefined
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
       }
     }
     Enums: {
+      payment_method: "coins" | "razorpay" | "manual" | "free"
+      payment_status: "pending" | "approved" | "rejected"
       user_role: "user" | "admin"
+      withdrawal_status: "pending" | "completed" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -454,7 +467,10 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      payment_method: ["coins", "razorpay", "manual", "free"],
+      payment_status: ["pending", "approved", "rejected"],
       user_role: ["user", "admin"],
+      withdrawal_status: ["pending", "completed", "failed"],
     },
   },
 } as const
