@@ -6,7 +6,7 @@ import { Bell, Gift, Target, Calendar, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 import SpinWheel from '@/components/games/SpinWheel';
-import ScratchCard from '@/components/games/ScratchCard';
+import NativeAdComponent from '@/components/ads/NativeAdComponent';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -68,15 +68,14 @@ const Dashboard = () => {
         </div>
       </Card>
 
-      {/* Spin Wheel & Scratch Card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      {/* Native Ad */}
+      <NativeAdComponent />
+
+      {/* Spin Wheel */}
+      <div className="grid grid-cols-1 gap-4 mb-4">
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
           <SpinWheel />
-        </div>
-        <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
-          <ScratchCard />
         </div>
       </div>
 

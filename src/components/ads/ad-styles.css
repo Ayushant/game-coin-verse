@@ -1,0 +1,29 @@
+
+.ad-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f9fafb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ad-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dark .ad-container {
+  background-color: #1f2937;
+}
+
+.dark .ad-placeholder {
+  color: #9ca3af;
+}

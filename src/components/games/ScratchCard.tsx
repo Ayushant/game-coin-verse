@@ -453,85 +453,85 @@ const ScratchCard = () => {
       toast({
         title: "Congratulations! 🎉",
         description: `You won ${amount} coins!`
-      });
+    });
+    
+    // Create a burst of particles from the center of the canvas
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
       
-      // Create a burst of particles from the center of the canvas
-      if (canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Create particle burst
+        const particles: Array<{
+          x: number;
+          y: number;
+          vx: number;
+          vy: number;
+          color: string;
+          size: number;
+          life: number;
+        }> = [];
         
-        if (ctx) {
-          // Create particle burst
-          const particles: Array<{
-            x: number;
-            y: number;
-            vx: number;
-            vy: number;
-            color: string;
-            size: number;
-            life: number;
-          }> = [];
+        const colors = ['#FFD700', '#FFC107', '#FFEB3B', '#FF9800', '#FFFFFF'];
+        
+        // Create particles
+        for (let i = 0; i < 100; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 5 + 2;
           
-          const colors = ['#FFD700', '#FFC107', '#FFEB3B', '#FF9800', '#FFFFFF'];
+          particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: Math.random() * 4 + 1,
+            life: Math.random() * 50 + 50
+          });
+        }
+        
+        // Animate particles
+        const animateParticles = () => {
+          if (!canvasRef.current) return;
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
           
-          // Create particles
-          for (let i = 0; i < 100; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = Math.random() * 5 + 2;
+          // Draw reward first
+          drawReward(ctx, canvas.width, canvas.height);
+          
+          // Update and draw particles
+          let alive = false;
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             
-            particles.push({
-              x: canvas.width / 2,
-              y: canvas.height / 2,
-              vx: Math.cos(angle) * speed,
-              vy: Math.sin(angle) * speed,
-              color: colors[Math.floor(Math.random() * colors.length)],
-              size: Math.random() * 4 + 1,
-              life: Math.random() * 50 + 50
-            });
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.1; // gravity
+            p.life--;
+            
+            if (p.life > 0) {
+              alive = true;
+              ctx.globalAlpha = p.life / 100;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+              ctx.fillStyle = p.color;
+              ctx.fill();
+            }
           }
           
-          // Animate particles
-          const animateParticles = () => {
-            if (!canvasRef.current) return;
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-            
-            // Draw reward first
-            drawReward(ctx, canvas.width, canvas.height);
-            
-            // Update and draw particles
-            let alive = false;
-            for (let i = 0; i < particles.length; i++) {
-              const p = particles[i];
-              
-              p.x += p.vx;
-              p.y += p.vy;
-              p.vy += 0.1; // gravity
-              p.life--;
-              
-              if (p.life > 0) {
-                alive = true;
-                ctx.globalAlpha = p.life / 100;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-              }
-            }
-            
-            ctx.globalAlpha = 1;
-            
-            // Continue animation if particles are still alive
-            if (alive) {
-              requestAnimationFrame(animateParticles);
-            }
-          };
+          ctx.globalAlpha = 1;
           
-          // Start animation
-          animateParticles();
-        }
+          // Continue animation if particles are still alive
+          if (alive) {
+            requestAnimationFrame(animateParticles);
+          }
+        };
+        
+        // Start animation
+        animateParticles();
       }
+    }
       
     } catch (error) {
       console.error("Error awarding coins:", error);
