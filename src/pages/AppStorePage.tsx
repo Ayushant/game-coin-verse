@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Download, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { App, PaymentMethod } from '@/types/app';
 
@@ -52,7 +52,7 @@ const AppStorePage = () => {
       if (appsError) throw appsError;
       
       // If user is logged in, check purchased apps
-      if (user) {
+      if (user && user.id && !user.isGuest) {
         const { data: purchasesData, error: purchasesError } = await supabase
           .from('purchases')
           .select('app_id')
@@ -90,6 +90,18 @@ const AppStorePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownload = (app: App) => {
+    if (!app.download_url) return;
+    
+    // Open the link in a new tab/window
+    window.open(app.download_url, '_blank', 'noopener,noreferrer');
+    
+    toast({
+      title: 'Download Started',
+      description: 'Your download has started in a new tab',
+    });
   };
 
   const renderPrice = (app: App) => {
@@ -158,17 +170,38 @@ const AppStorePage = () => {
                 </p>
               </CardContent>
               <CardFooter>
-                <Link 
-                  to={`/store/app/${app.id}`} 
-                  className="w-full"
-                >
-                  <Button 
-                    variant={app.is_purchased ? "secondary" : "default"}
+                {app.is_purchased ? (
+                  <a 
+                    href={app.download_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full no-underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDownload(app);
+                    }}
+                  >
+                    <Button 
+                      variant="secondary"
+                      className="w-full"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                  </a>
+                ) : (
+                  <Link 
+                    to={`/store/app/${app.id}`} 
                     className="w-full"
                   >
-                    {app.is_purchased ? 'Download' : 'View Details'}
-                  </Button>
-                </Link>
+                    <Button 
+                      variant="default"
+                      className="w-full"
+                    >
+                      View Details
+                    </Button>
+                  </Link>
+                )}
               </CardFooter>
             </Card>
           ))}

@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, ArrowLeft } from 'lucide-react';
+import { Loader2, Download, ArrowLeft, ExternalLink } from 'lucide-react';
 import { App, PaymentMethod } from '@/types/app';
 
 const AppDetailPage = () => {
@@ -165,6 +165,18 @@ const AppDetailPage = () => {
     navigate(`/store/payment/${app.id}`);
   };
 
+  const handleDownload = () => {
+    if (!app || !app.download_url) return;
+    
+    // Open the link in a new tab/window
+    window.open(app.download_url, '_blank', 'noopener,noreferrer');
+    
+    toast({
+      title: 'Download Started',
+      description: 'Your download has started in a new tab',
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -260,10 +272,21 @@ const AppDetailPage = () => {
           
           <div className="flex flex-col gap-4">
             {app.is_purchased ? (
-              <Button size="lg" className="w-full">
-                <Download className="mr-2 h-5 w-5" />
-                Download App
-              </Button>
+              <a 
+                href={app.download_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="no-underline"
+              >
+                <Button 
+                  size="lg" 
+                  className="w-full"
+                  onClick={handleDownload}
+                >
+                  <Download className="mr-2 h-5 w-5" />
+                  Download App
+                </Button>
+              </a>
             ) : (
               <>
                 {app.payment_method === 'coins' && app.coin_price && (
@@ -308,13 +331,21 @@ const AppDetailPage = () => {
                 )}
                 
                 {app.payment_method === 'free' && (
-                  <Button 
-                    size="lg"
-                    className="w-full"
-                    disabled={!user}
+                  <a 
+                    href={app.download_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="no-underline"
                   >
-                    Download Free App
-                  </Button>
+                    <Button 
+                      size="lg"
+                      className="w-full"
+                      disabled={!user}
+                    >
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      Download Free App
+                    </Button>
+                  </a>
                 )}
                 
                 {!user && (
