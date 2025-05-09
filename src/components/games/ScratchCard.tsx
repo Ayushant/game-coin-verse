@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Gift } from 'lucide-react';
+import { Sparkles, Gift, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -556,6 +556,12 @@ const ScratchCard = () => {
     return lastDate.toLocaleDateString();
   };
   
+  const closeCard = () => {
+    setIsActive(false);
+    setIsRevealed(false);
+    setPercentScratched(0);
+  };
+  
   return (
     <Card 
       className="game-card p-4 flex flex-col overflow-hidden"
@@ -583,7 +589,19 @@ const ScratchCard = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center relative">
+          {/* Close button */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              closeCard();
+            }}
+            className="absolute right-0 top-0 p-1 rounded-full bg-white/10 hover:bg-white/20 transition-all hover:scale-110 z-10"
+            aria-label="Close scratch card"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+          
           <div className="relative mb-4">
             <canvas 
               ref={canvasRef} 

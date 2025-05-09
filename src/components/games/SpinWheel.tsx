@@ -1,8 +1,7 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Coins, Gift } from 'lucide-react';
+import { Coins, Gift, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -279,8 +278,7 @@ const SpinWheel = () => {
       console.error("Error awarding coins:", error);
       toast({
         title: "Error",
-        description: "Failed to award coins",
-        variant: "destructive"
+        description: "Failed to award coins"
       });
     }
   };
@@ -360,6 +358,11 @@ const SpinWheel = () => {
     return lastDate.toLocaleDateString();
   };
   
+  const closeWheel = () => {
+    setShowWheel(false);
+    setIsSpinning(false);
+  };
+  
   return (
     <Card 
       className="game-card p-4 flex flex-col overflow-hidden relative"
@@ -386,7 +389,19 @@ const SpinWheel = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center relative">
+          {/* Close button */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              closeWheel();
+            }}
+            className="absolute right-0 top-0 p-1 rounded-full bg-white/10 hover:bg-white/20 transition-all hover:scale-110 z-10"
+            aria-label="Close spin wheel"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+          
           <div className="mb-4 relative">
             <canvas 
               ref={canvasRef} 
