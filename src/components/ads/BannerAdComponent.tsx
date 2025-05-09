@@ -17,59 +17,57 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
   const adRef = useRef<HTMLDivElement>(null);
   const isAndroid = Capacitor.getPlatform() === 'android';
   const [isLoaded, setIsLoaded] = useState(false);
-  const [adElement, setAdElement] = useState<HTMLElement | null>(null);
   
   useEffect(() => {
     // Only run when component is mounted and DOM is ready
     if (!adRef.current) return;
     
+    // Create a unique ID for this ad slot to avoid conflicts
+    const adId = `ad-${Math.random().toString(36).substring(2, 9)}`;
+    
     const loadAd = () => {
       try {
-        // Create the ad element
-        const adInsElement = document.createElement('ins');
-        adInsElement.className = 'adsbygoogle';
-        adInsElement.style.display = 'inline-block';
-        adInsElement.style.width = '100%';
-        adInsElement.style.height = '90px';
-        adInsElement.setAttribute('data-ad-client', adClient);
-        adInsElement.setAttribute('data-ad-slot', adSlot);
-        
-        // Clear the container and append the ad
+        // Clear existing content
         if (adRef.current) {
-          // Store reference to the ad element to properly clean it up later
-          setAdElement(adInsElement);
+          adRef.current.innerHTML = '';
           
-          // Make sure the container is empty before adding a new ad
-          while (adRef.current.firstChild) {
-            adRef.current.removeChild(adRef.current.firstChild);
-          }
+          // Create the ad element with a unique ID
+          const adInsElement = document.createElement('ins');
+          adInsElement.id = adId;
+          adInsElement.className = 'adsbygoogle';
+          adInsElement.style.display = 'block';
+          adInsElement.style.width = '100%';
+          adInsElement.style.height = '90px';
+          adInsElement.setAttribute('data-ad-client', adClient);
+          adInsElement.setAttribute('data-ad-slot', adSlot);
           
+          // Append the ad to the container
           adRef.current.appendChild(adInsElement);
           
-          // Push the ad - using window object explicitly
-          ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-          setIsLoaded(true);
-          
-          console.log('Banner ad initialized with explicit dimensions');
+          // Push the ad command
+          try {
+            ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+            console.log('Banner ad pushed to queue');
+            setIsLoaded(true);
+          } catch (pushError) {
+            console.error('Error pushing ad to queue:', pushError);
+          }
         }
       } catch (error) {
         console.error('Error initializing banner ad:', error);
       }
     };
     
-    // Use a small delay to ensure React has completed its updates
+    // Short delay to ensure React rendering is complete
     const timer = setTimeout(loadAd, 100);
     
+    // Cleanup function
     return () => {
       clearTimeout(timer);
       
-      // Clean up properly on unmount - only remove the element if it exists and is a child of adRef
-      if (adRef.current && adElement && adRef.current.contains(adElement)) {
-        try {
-          adRef.current.removeChild(adElement);
-        } catch (error) {
-          console.error('Error removing ad element:', error);
-        }
+      // Safe cleanup - just clear the HTML content
+      if (adRef.current) {
+        adRef.current.innerHTML = '';
       }
     };
   }, [adClient, adSlot]);

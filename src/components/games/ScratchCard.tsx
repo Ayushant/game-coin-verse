@@ -59,8 +59,8 @@ const ScratchCard: React.FC<ScratchCardProps> = ({ onComplete }) => {
         )}
       </div>
       
-      {/* Add an ad below the scratch card */}
-      <div className="mt-4">
+      {/* Ad container with key to force re-render when card state changes */}
+      <div className="mt-4" key={isScratched ? 'scratched' : 'unscratched'}>
         <BannerAdComponent adSlot="7271840531" />
       </div>
     </Card>
