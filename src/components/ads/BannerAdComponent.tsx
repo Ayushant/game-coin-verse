@@ -37,8 +37,8 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
         adRef.current.innerHTML = '';
         adRef.current.appendChild(adInsElement);
         
-        // Push the ad
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        // Push the ad - using window object explicitly
+        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
         
         console.log('Banner ad initialized');
       }
