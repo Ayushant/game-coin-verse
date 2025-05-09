@@ -15,7 +15,8 @@ const ScratchCard: React.FC<ScratchCardProps> = ({ onComplete }) => {
   const adKey = useRef(`ad-${Math.random().toString(36).substring(2, 9)}`);
   
   useEffect(() => {
-    // Update the ad key when isScratched changes
+    // Generate a new completely unique key when isScratched changes 
+    // to force a complete re-render of the ad component
     adKey.current = `ad-${isScratched ? 'scratched' : 'unscratched'}-${Math.random().toString(36).substring(2, 9)}`;
   }, [isScratched]);
   
@@ -66,9 +67,9 @@ const ScratchCard: React.FC<ScratchCardProps> = ({ onComplete }) => {
         )}
       </div>
       
-      {/* Ad container with stable key based on scratch state to force proper re-render */}
-      <div className="mt-4" key={adKey.current}>
-        <BannerAdComponent adSlot="7271840531" />
+      {/* Completely unmount and remount the ad component with a unique key when scratch state changes */}
+      <div className="mt-4">
+        <BannerAdComponent key={adKey.current} />
       </div>
     </Card>
   );

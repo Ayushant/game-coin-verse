@@ -26,7 +26,7 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
       try {
         if (!adRef.current) return;
         
-        // Safely clean up previous content
+        // Safely clean up previous content using innerHTML
         adRef.current.innerHTML = '';
         
         // Create ad element with unique ID to avoid conflicts
@@ -35,22 +35,24 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
         adInsElement.className = 'adsbygoogle';
         adInsElement.style.display = 'block';
         adInsElement.style.width = '100%';
-        adInsElement.style.height = '90px';
+        adInsElement.style.height = '90px'; // Fixed height
         adInsElement.setAttribute('data-ad-client', adClient);
         adInsElement.setAttribute('data-ad-slot', adSlot);
         
         // Append the ad to container
-        adRef.current.appendChild(adInsElement);
+        if (adRef.current) {
+          adRef.current.appendChild(adInsElement);
         
-        // Push the ad command
-        try {
-          if (window.adsbygoogle) {
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-            console.log('Banner ad pushed to queue');
-            setIsLoaded(true);
+          // Push the ad command
+          try {
+            if (window.adsbygoogle) {
+              console.log('Pushing ad to queue with ID:', uniqueId.current);
+              (window.adsbygoogle = window.adsbygoogle || []).push({});
+              setIsLoaded(true);
+            }
+          } catch (pushError) {
+            console.error('Error pushing ad to queue:', pushError);
           }
-        } catch (pushError) {
-          console.error('Error pushing ad to queue:', pushError);
         }
       } catch (error) {
         console.error('Error initializing banner ad:', error);
@@ -63,7 +65,7 @@ const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
     return () => {
       clearTimeout(timer);
       
-      // Safe cleanup - use innerHTML rather than removeChild
+      // Safe cleanup using innerHTML instead of removeChild
       if (adRef.current) {
         adRef.current.innerHTML = '';
       }
