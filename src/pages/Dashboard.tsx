@@ -6,8 +6,6 @@ import { Bell, Gift, Target, Calendar, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import CoinDisplay from '@/components/ui/CoinDisplay';
 import SpinWheel from '@/components/games/SpinWheel';
-import NativeAdComponent from '@/components/ads/NativeAdComponent';
-import BannerAdComponent from '@/components/ads/BannerAdComponent';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -26,7 +24,7 @@ const Dashboard = () => {
     <div className="p-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">GameCoinVerse</h1>
+          <h1 className="text-2xl font-bold text-white">WinWitty</h1>
           <p className="text-white/80">
             {user.isGuest ? 'Guest User' : user.email || 'User'}
           </p>
@@ -36,9 +34,6 @@ const Dashboard = () => {
           <Bell className="h-6 w-6 text-white cursor-pointer" />
         </div>
       </div>
-
-      {/* Banner Ad at top of dashboard */}
-      <BannerAdComponent className="mb-4" />
 
       {/* Daily Bonus & Missions */}
       <Card className="game-card p-4 mb-4">
@@ -71,9 +66,6 @@ const Dashboard = () => {
           </div>
         </div>
       </Card>
-
-      {/* Native Ad */}
-      <NativeAdComponent />
 
       {/* Spin Wheel */}
       <div className="grid grid-cols-1 gap-4 mb-4">
@@ -110,9 +102,6 @@ const Dashboard = () => {
           />
         </div>
       </Card>
-
-      {/* Banner Ad before Download Apps section */}
-      <BannerAdComponent className="mb-4" />
 
       {/* Download Apps */}
       <Card className="game-card p-4 mb-4">
