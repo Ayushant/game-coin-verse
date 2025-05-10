@@ -9,6 +9,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import AppLayout from "./components/layout/AppLayout";
+import AdService from "./services/AdService";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -49,6 +50,19 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  React.useEffect(() => {
+    // Initialize AdMob service
+    const initAds = async () => {
+      try {
+        await AdService.initialize();
+      } catch (error) {
+        console.error("Failed to initialize ads:", error);
+      }
+    };
+    
+    initAds();
+  }, []);
+
   return (
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>

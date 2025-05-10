@@ -1,8 +1,14 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import BannerAd from '@/components/ads/BannerAd';
+import InterstitialAd from '@/components/ads/InterstitialAd';
+import RewardedAd from '@/components/ads/RewardedAd';
+import { BannerAdPosition } from '@capacitor-community/admob';
 
 interface Game {
   id: string;
@@ -66,7 +72,9 @@ const gameList: Game[] = [
 
 const GamesPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUserCoins } = useAuth();
+  const isMobile = useIsMobile();
+  const { toast } = useToast();
   
   const featuredGame = gameList[6]; // Making the Quiz Game the featured game
 
@@ -74,9 +82,20 @@ const GamesPage = () => {
     // Simply navigate to the selected game
     navigate(route);
   };
+
+  const handleRewardedAd = (reward: { type: string; amount: number }) => {
+    // Add coins to user account when they watch a rewarded ad
+    const coinsEarned = reward.amount;
+    updateUserCoins(coinsEarned);
+    
+    toast({
+      title: "Reward Earned!",
+      description: `You earned ${coinsEarned} coins for watching the ad!`,
+    });
+  };
   
   return (
-    <div className="p-4">
+    <div className="p-4 pb-20">
       <h1 className="text-2xl font-bold mb-6 text-white">Games</h1>
       
       {/* Featured Game */}
@@ -95,15 +114,35 @@ const GamesPage = () => {
             <p className="text-gray-600 dark:text-gray-300 mb-4">
               {featuredGame.description}
             </p>
-            <button
-              className="bg-game-purple text-white px-4 py-2 rounded-full"
-              onClick={() => handleGameSelection(featuredGame.route)}
-            >
-              Play Now
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                className="bg-game-purple text-white px-4 py-2 rounded-full"
+                onClick={() => handleGameSelection(featuredGame.route)}
+              >
+                Play Now
+              </button>
+              
+              {/* Rewarded Ad for coins */}
+              <RewardedAd 
+                className="bg-game-gold text-white px-4 py-2 rounded-full"
+                buttonText="Watch Ad for Coins" 
+                onRewarded={handleRewardedAd}
+              />
+            </div>
           </div>
         </div>
       </Card>
+      
+      {/* Interstitial Ad Demo */}
+      <div className="mb-4 p-3 bg-white/10 rounded-lg">
+        <h3 className="text-white font-medium mb-2">Try an Interstitial Ad</h3>
+        <p className="text-sm text-white/70 mb-3">Interstitial ads appear between game sessions</p>
+        <InterstitialAd 
+          buttonText="Show Full Screen Ad" 
+          className="w-full bg-game-purple-light"
+          onAdDismissed={() => toast({ title: "Ad closed", description: "Thanks for watching!" })}
+        />
+      </div>
       
       {/* All Games */}
       <div className="mb-4">
@@ -118,6 +157,9 @@ const GamesPage = () => {
           ))}
         </div>
       </div>
+      
+      {/* Show banner ad only on mobile devices */}
+      {isMobile && <BannerAd position={BannerAdPosition.BOTTOM_CENTER} />}
     </div>
   );
 };
