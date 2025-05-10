@@ -109,22 +109,6 @@ const GamesPage = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-6 text-white">Games</h1>
       
-      {/* Adding app logo at the top */}
-      <div className="flex justify-center mb-6">
-        <div className="flex items-center justify-center gap-4">
-          <img 
-            src="/lovable-uploads/895ab5f3-acb4-452a-aba4-99b9bef9cde6.png" 
-            alt="Game Logo" 
-            className="h-16 object-contain"
-          />
-          <img 
-            src="/lovable-uploads/50eac3ec-bfc9-4310-877b-9c7d7cb1b16d.png" 
-            alt="Game Logo" 
-            className="h-16 object-contain"
-          />
-        </div>
-      </div>
-      
       {/* Featured Game */}
       <Card className="game-card mb-6">
         <div className="flex items-center justify-between mb-3">
