@@ -86,11 +86,16 @@ export const AdsService = {
           const coinAmount = 10; // Base amount of coins to award
           
           try {
-            // Using the RPC function to update user coins
-            const { error } = await supabase.rpc('update_user_coins', {
-              user_id: userId,
-              coin_amount: coinAmount
-            });
+            // Using the RPC function to update user coins with type assertion
+            // to bypass TypeScript's limitation since our RPC function is valid
+            // but not in the auto-generated types
+            const { error } = await supabase.rpc(
+              'update_user_coins' as any,
+              {
+                user_id: userId,
+                coin_amount: coinAmount
+              }
+            );
             
             if (error) {
               console.error('Error updating coins after ad:', error);
