@@ -339,6 +339,15 @@ const Game2048 = () => {
         <CoinDisplay />
       </div>
       
+      {/* Adding game image at the top */}
+      <div className="flex justify-center mb-4">
+        <img 
+          src="/lovable-uploads/50eac3ec-bfc9-4310-877b-9c7d7cb1b16d.png" 
+          alt="PlayStation shapes" 
+          className="h-16 object-contain"
+        />
+      </div>
+      
       <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl p-4 shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -197,6 +196,15 @@ const Sudoku = () => {
           <h1 className="text-2xl font-bold text-white">Sudoku</h1>
         </div>
         <CoinDisplay />
+      </div>
+      
+      {/* Adding game image at the top */}
+      <div className="flex justify-center mb-4">
+        <img 
+          src="/lovable-uploads/895ab5f3-acb4-452a-aba4-99b9bef9cde6.png" 
+          alt="Pacman ghosts" 
+          className="h-16 object-contain"
+        />
       </div>
       
       <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl p-4 shadow-lg">
