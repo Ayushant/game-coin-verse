@@ -102,17 +102,22 @@ export const AdService = {
     }
   },
 
-  // Show Rewarded Ad - fixed to use the correct property structure
+  // Show Rewarded Ad - fixed to properly handle the reward data structure
   showRewarded: async (): Promise<{ type: string; amount: number } | null> => {
     try {
       const result = await AdMob.showRewardVideoAd();
-      // Extract reward information from the result
-      if (result && typeof result === 'object' && 'type' in result && 'amount' in result) {
-        return {
-          type: result.type as string,
-          amount: result.amount as number
-        };
+      
+      // Extract reward information based on the actual structure returned by the AdMob plugin
+      if (result && 'reward' in result) {
+        const rewardData = result.reward;
+        if (rewardData && typeof rewardData === 'object') {
+          return {
+            type: rewardData.type || 'coins',
+            amount: typeof rewardData.amount === 'number' ? rewardData.amount : 10
+          };
+        }
       }
+      
       // Return default values if the structure doesn't match exactly what we expect
       return {
         type: 'coins',

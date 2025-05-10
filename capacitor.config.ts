@@ -12,7 +12,10 @@ const config: CapacitorConfig = {
   android: {
     buildOptions: {
       keystorePath: null,
-      keystoreAlias: null
+      keystoreAlias: null,
+      minSdkVersion: 21,
+      targetSdkVersion: 33,
+      compileSdkVersion: 33
     }
   },
   ios: {

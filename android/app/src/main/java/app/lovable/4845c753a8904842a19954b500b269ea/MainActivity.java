@@ -8,9 +8,7 @@ import com.getcapacitor.community.admob.AdMob;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        // Register AdMob plugin
         registerPlugin(AdMob.class);
+        super.onCreate(savedInstanceState);
     }
 }
