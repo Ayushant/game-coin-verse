@@ -1,4 +1,3 @@
-
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -27,17 +26,16 @@ const config: CapacitorConfig = {
       showSpinner: true,
       spinnerColor: "#ffffff"
     },
-    // Mobile orientation settings for games
     CapacitorScreenOrientation: {
       lockOrientationToPortrait: true
     },
-    // Register our Unity Ads plugin
+    // Fix Unity Ads plugin config to make it simpler
     UnityAdsPlugin: {
       gameId: "5851223",
       testMode: false
     }
   },
-  // Add dependency for Unity Ads
+  // Keep the cordova preferences for backward compatibility
   cordova: {
     preferences: {
       UNITY_GAME_ID: "5851223"

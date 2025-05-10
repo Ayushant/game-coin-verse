@@ -13,8 +13,20 @@ interface UnityAdsPlugin {
   }>;
 }
 
-// Register the plugin with Capacitor
-const UnityAds = registerPlugin<UnityAdsPlugin>('UnityAdsPlugin');
+// Register the plugin with Capacitor but handle potential errors
+let UnityAds: any;
+try {
+  UnityAds = registerPlugin<UnityAdsPlugin>('UnityAdsPlugin');
+  console.log('Unity Ads plugin registered successfully');
+} catch (error) {
+  console.error('Error registering Unity Ads plugin:', error);
+  // Create a mock implementation for when the plugin registration fails
+  UnityAds = {
+    initialize: async () => ({ success: false }),
+    loadRewardedAd: async () => ({ success: false }),
+    showRewardedAd: async () => ({ success: false, completed: false, skipped: false })
+  };
+}
 
 // This will check if we're in a Capacitor environment (mobile app)
 const isMobileApp = () => {
