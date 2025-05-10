@@ -1,10 +1,8 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { AdsService } from '@/services/AdsService';
-import { useToast } from '@/hooks/use-toast';
 
 interface Game {
   id: string;
@@ -69,40 +67,12 @@ const gameList: Game[] = [
 const GamesPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
   
   const featuredGame = gameList[6]; // Making the Quiz Game the featured game
 
-  // Initialize Unity Ads when the component mounts
-  useEffect(() => {
-    const initAds = async () => {
-      await AdsService.initialize();
-    };
-    
-    initAds();
-  }, []);
-
-  const handleGameSelection = async (route: string) => {
-    if (!user) return;
-    
-    try {
-      // Show a rewarded ad before navigating to the game
-      const { success, watched } = await AdsService.showRewardedAd(user.id);
-      
-      if (success && watched) {
-        toast({
-          title: "Thanks for watching!",
-          description: "You've earned 10 coins.",
-        });
-      }
-      
-      // Navigate to the game regardless of ad result
-      navigate(route);
-    } catch (error) {
-      console.error("Error showing ad:", error);
-      // If there's an error, just navigate to the game
-      navigate(route);
-    }
+  const handleGameSelection = (route: string) => {
+    // Simply navigate to the selected game
+    navigate(route);
   };
   
   return (
