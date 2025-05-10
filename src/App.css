@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +40,25 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Quiz game specific styles */
+.quiz-option {
+  @apply transition-all duration-300;
+}
+
+.quiz-option.correct {
+  @apply bg-green-600 text-white;
+}
+
+.quiz-option.incorrect {
+  @apply bg-red-600 text-white;
+}
+
+.quiz-option.disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.quiz-timer-bar {
+  @apply h-2 rounded-full transition-all duration-300;
 }

@@ -20,6 +20,7 @@ import Sudoku from "./pages/games/Sudoku";
 import MathChallenge from "./pages/games/MathChallenge";
 import BlockPuzzle from "./pages/games/BlockPuzzle";
 import MemoryMatch from "./pages/games/MemoryMatch";
+import QuizGame from "./pages/games/QuizGame";
 import WalletPage from "./pages/WalletPage";
 import WithdrawalPage from "./pages/WithdrawalPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -74,6 +75,7 @@ const App = () => {
                       <Route path="games/mathchallenge" element={<MathChallenge />} />
                       <Route path="games/blockpuzzle" element={<BlockPuzzle />} />
                       <Route path="games/memorymatch" element={<MemoryMatch />} />
+                      <Route path="games/quiz" element={<QuizGame />} />
                       <Route path="wallet" element={<WalletPage />} />
                       <Route path="withdraw" element={<WithdrawalPage />} />
                       <Route path="profile" element={<ProfilePage />} />

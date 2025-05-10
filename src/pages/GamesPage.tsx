@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -53,12 +54,19 @@ const gameList: Game[] = [
     imageUrl: 'https://images.unsplash.com/photo-1606167668584-78701c57f13d?q=80&w=500&auto=format&fit=crop',
     route: '/games/memorymatch',
   },
+  {
+    id: 'quiz',
+    title: 'Quiz Game',
+    description: 'Test your knowledge and earn coins.',
+    imageUrl: 'https://images.unsplash.com/photo-1606326608690-4e0281b1e588?q=80&w=500&auto=format&fit=crop',
+    route: '/games/quiz',
+  },
 ];
 
 const GamesPage = () => {
   const navigate = useNavigate();
   
-  const featuredGame = gameList[0];
+  const featuredGame = gameList[6]; // Making the Quiz Game the featured game
 
   return (
     <div className="p-4">
