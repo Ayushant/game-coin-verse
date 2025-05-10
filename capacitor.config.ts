@@ -28,6 +28,17 @@ const config: CapacitorConfig = {
     // Mobile orientation settings for games
     CapacitorScreenOrientation: {
       lockOrientationToPortrait: true
+    },
+    // Register our Unity Ads plugin
+    UnityAdsPlugin: {
+      gameId: "5851223",
+      testMode: false
+    }
+  },
+  // Add dependency for Unity Ads
+  cordova: {
+    preferences: {
+      UNITY_GAME_ID: "5851223"
     }
   }
 };

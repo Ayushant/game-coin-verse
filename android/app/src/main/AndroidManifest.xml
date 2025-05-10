@@ -9,6 +9,14 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
             
+        <!-- Unity Ads Meta-data -->
+        <meta-data
+            android:name="com.unity3d.ads.game_id"
+            android:value="5851223" />
+        <meta-data
+            android:name="com.unity3d.ads.test_mode"
+            android:value="false" />
+            
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:name="app.lovable.4845c753a8904842a19954b500b269ea.MainActivity"
