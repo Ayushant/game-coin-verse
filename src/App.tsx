@@ -38,6 +38,7 @@ import AppDetailPage from "./pages/AppDetailPage";
 import ManualPaymentPage from "./pages/ManualPaymentPage";
 import TechDocumentation from "./pages/TechDocumentation";
 import Index from "./pages/Index";
+import { useStartupAd } from "./hooks/useStartupAd";
 
 // Create a new QueryClient instance with explicit configuration
 const queryClient = new QueryClient({
@@ -49,20 +50,65 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => {
-  React.useEffect(() => {
-    // Initialize AdMob service
-    const initAds = async () => {
-      try {
-        await AdService.initialize();
-      } catch (error) {
-        console.error("Failed to initialize ads:", error);
-      }
-    };
-    
-    initAds();
-  }, []);
+const AppContent = () => {
+  const readyToShow = useStartupAd();
+  
+  if (!readyToShow) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-white border-t-transparent"></div>
+      </div>
+    );
+  }
 
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Auth Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        
+        {/* App Routes */}
+        <Route path="/" element={<AppLayout />}>
+          <Route index element={<Index />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="games" element={<GamesPage />} />
+          <Route path="games/tictactoe" element={<TicTacToe />} />
+          <Route path="games/2048" element={<Game2048 />} />
+          <Route path="games/sudoku" element={<Sudoku />} />
+          <Route path="games/mathchallenge" element={<MathChallenge />} />
+          <Route path="games/blockpuzzle" element={<BlockPuzzle />} />
+          <Route path="games/memorymatch" element={<MemoryMatch />} />
+          <Route path="games/quiz" element={<QuizGame />} />
+          <Route path="wallet" element={<WalletPage />} />
+          <Route path="withdraw" element={<WithdrawalPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="documentation" element={<TechDocumentation />} />
+          
+          {/* App Store Routes */}
+          <Route path="store" element={<AppStorePage />} />
+          <Route path="store/app/:id" element={<AppDetailPage />} />
+          <Route path="store/payment/:appId" element={<ManualPaymentPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin/withdrawals" element={<AdminWithdrawals />} />
+          <Route path="admin/users" element={<AdminUsers />} />
+          <Route path="admin/apps" element={<AdminApps />} />
+          <Route path="admin/payments" element={<AdminPayments />} />
+          <Route path="admin/settings" element={<AdminSettings />} />
+        </Route>
+        
+        {/* Catch-all */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+const App = () => {
   return (
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
@@ -72,49 +118,7 @@ const App = () => {
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                    {/* Auth Routes */}
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    
-                    {/* App Routes */}
-                    <Route path="/" element={<AppLayout />}>
-                      <Route index element={<Index />} />
-                      <Route path="dashboard" element={<Dashboard />} />
-                      <Route path="games" element={<GamesPage />} />
-                      <Route path="games/tictactoe" element={<TicTacToe />} />
-                      <Route path="games/2048" element={<Game2048 />} />
-                      <Route path="games/sudoku" element={<Sudoku />} />
-                      <Route path="games/mathchallenge" element={<MathChallenge />} />
-                      <Route path="games/blockpuzzle" element={<BlockPuzzle />} />
-                      <Route path="games/memorymatch" element={<MemoryMatch />} />
-                      <Route path="games/quiz" element={<QuizGame />} />
-                      <Route path="wallet" element={<WalletPage />} />
-                      <Route path="withdraw" element={<WithdrawalPage />} />
-                      <Route path="profile" element={<ProfilePage />} />
-                      <Route path="settings" element={<SettingsPage />} />
-                      <Route path="documentation" element={<TechDocumentation />} />
-                      
-                      {/* App Store Routes */}
-                      <Route path="store" element={<AppStorePage />} />
-                      <Route path="store/app/:id" element={<AppDetailPage />} />
-                      <Route path="store/payment/:appId" element={<ManualPaymentPage />} />
-                      
-                      {/* Admin Routes */}
-                      <Route path="admin" element={<AdminDashboard />} />
-                      <Route path="admin/withdrawals" element={<AdminWithdrawals />} />
-                      <Route path="admin/users" element={<AdminUsers />} />
-                      <Route path="admin/apps" element={<AdminApps />} />
-                      <Route path="admin/payments" element={<AdminPayments />} />
-                      <Route path="admin/settings" element={<AdminSettings />} />
-                    </Route>
-                    
-                    {/* Catch-all */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
+                <AppContent />
               </TooltipProvider>
             </AdminProvider>
           </AuthProvider>
