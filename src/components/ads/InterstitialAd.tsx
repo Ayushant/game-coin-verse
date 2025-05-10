@@ -21,8 +21,7 @@ const InterstitialAd: React.FC<InterstitialAdProps> = ({
   const showAd = useCallback(async () => {
     setLoading(true);
     try {
-      await AdService.prepareInterstitial();
-      await AdService.showInterstitial();
+      await AdService.showGameEntryAd();
       if (onAdDismissed) onAdDismissed();
     } catch (error) {
       console.error('Failed to show interstitial ad:', error);

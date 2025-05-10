@@ -69,6 +69,19 @@ export const AdService = {
     }
   },
 
+  // Prepare and show an interstitial ad (combined for easier use)
+  showGameEntryAd: async (): Promise<void> => {
+    try {
+      const options: AdOptions = {
+        adId: INTERSTITIAL_ID[getPlatform()],
+      };
+      await AdMob.prepareInterstitial(options);
+      await AdMob.showInterstitial();
+    } catch (error) {
+      console.error('Error showing game entry ad:', error);
+    }
+  },
+
   // Prepare Interstitial Ad
   prepareInterstitial: async (): Promise<void> => {
     try {

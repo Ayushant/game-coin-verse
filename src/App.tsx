@@ -38,7 +38,7 @@ import AppDetailPage from "./pages/AppDetailPage";
 import ManualPaymentPage from "./pages/ManualPaymentPage";
 import TechDocumentation from "./pages/TechDocumentation";
 import Index from "./pages/Index";
-import { useStartupAd } from "./hooks/useStartupAd";
+import { useEffect, useState } from 'react';
 
 // Create a new QueryClient instance with explicit configuration
 const queryClient = new QueryClient({
@@ -51,9 +51,25 @@ const queryClient = new QueryClient({
 });
 
 const AppContent = () => {
-  const readyToShow = useStartupAd();
+  const [adMobInitialized, setAdMobInitialized] = useState(false);
   
-  if (!readyToShow) {
+  // Initialize AdMob when app starts, but don't show ads yet
+  useEffect(() => {
+    const initializeAdMob = async () => {
+      try {
+        await AdService.initialize();
+        setAdMobInitialized(true);
+      } catch (error) {
+        console.error('Error initializing AdMob:', error);
+        // Continue with app even if AdMob fails to initialize
+        setAdMobInitialized(true);
+      }
+    };
+    
+    initializeAdMob();
+  }, []);
+  
+  if (!adMobInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
         <div className="animate-spin rounded-full h-10 w-10 border-4 border-white border-t-transparent"></div>
