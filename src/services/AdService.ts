@@ -109,10 +109,10 @@ export const AdService = {
       
       // Extract reward information based on the actual structure returned by the AdMob plugin
       if (result && 'reward' in result) {
-        const rewardData = result.reward;
+        const rewardData = result.reward as Record<string, any>;
         if (rewardData && typeof rewardData === 'object') {
           return {
-            type: rewardData.type || 'coins',
+            type: typeof rewardData.type === 'string' ? rewardData.type : 'coins',
             amount: typeof rewardData.amount === 'number' ? rewardData.amount : 10
           };
         }
