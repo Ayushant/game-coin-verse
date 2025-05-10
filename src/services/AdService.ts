@@ -34,8 +34,9 @@ export const AdService = {
     try {
       // Initialize AdMob with correct options
       await AdMob.initialize({
-        // Remove requestTrackingAuthorization as it's not in the type definition
+        // testingDevices is an array of device IDs that will always receive test ads
         testingDevices: ['EMULATOR'],
+        // Set to true during development to show test ads
         initializeForTesting: true,
       });
       console.log('AdMob initialized successfully');

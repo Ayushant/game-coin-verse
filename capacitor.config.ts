@@ -35,7 +35,9 @@ const config: CapacitorConfig = {
       appId: {
         ios: "ca-app-pub-3940256099942544~1458002511",
         android: "ca-app-pub-3940256099942544~3347511713"
-      }
+      },
+      // For mediation support, we only need to configure AdMob
+      // Unity Ads is configured in the AdMob dashboard
     }
   }
 };
