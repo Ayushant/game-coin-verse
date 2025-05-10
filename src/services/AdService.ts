@@ -29,9 +29,18 @@ const getPlatform = (): 'android' | 'ios' => {
   return 'ios';
 };
 
+// Flag to track AdMob initialization status
+let isAdMobInitialized = false;
+
 export const AdService = {
   initialize: async (): Promise<void> => {
     try {
+      // Check if AdMob is already initialized
+      if (isAdMobInitialized) {
+        console.log('AdMob already initialized');
+        return;
+      }
+      
       // Initialize AdMob with correct options
       await AdMob.initialize({
         // testingDevices is an array of device IDs that will always receive test ads
@@ -39,6 +48,8 @@ export const AdService = {
         // Set to true during development to show test ads
         initializeForTesting: true,
       });
+      
+      isAdMobInitialized = true;
       console.log('AdMob initialized successfully');
     } catch (error) {
       console.error('Error initializing AdMob:', error);
@@ -48,6 +59,10 @@ export const AdService = {
   // Show Banner Ad
   showBanner: async (position: BannerAdPosition = BannerAdPosition.BOTTOM_CENTER): Promise<void> => {
     try {
+      if (!isAdMobInitialized) {
+        await AdService.initialize();
+      }
+      
       const options: BannerAdOptions = {
         adId: BANNER_ID[getPlatform()],
         adSize: BannerAdSize.ADAPTIVE_BANNER,
@@ -72,6 +87,10 @@ export const AdService = {
   // Prepare and show an interstitial ad (combined for easier use)
   showGameEntryAd: async (): Promise<void> => {
     try {
+      if (!isAdMobInitialized) {
+        await AdService.initialize();
+      }
+      
       const options: AdOptions = {
         adId: INTERSTITIAL_ID[getPlatform()],
       };
@@ -79,12 +98,17 @@ export const AdService = {
       await AdMob.showInterstitial();
     } catch (error) {
       console.error('Error showing game entry ad:', error);
+      // Continue execution even if ad fails
     }
   },
 
   // Prepare Interstitial Ad
   prepareInterstitial: async (): Promise<void> => {
     try {
+      if (!isAdMobInitialized) {
+        await AdService.initialize();
+      }
+      
       const options: AdOptions = {
         adId: INTERSTITIAL_ID[getPlatform()],
       };
@@ -106,6 +130,10 @@ export const AdService = {
   // Prepare Rewarded Ad
   prepareRewarded: async (): Promise<void> => {
     try {
+      if (!isAdMobInitialized) {
+        await AdService.initialize();
+      }
+      
       const options: RewardAdOptions = {
         adId: REWARDED_ID[getPlatform()],
       };
@@ -115,7 +143,7 @@ export const AdService = {
     }
   },
 
-  // Show Rewarded Ad - fixed to properly handle the reward data structure
+  // Show Rewarded Ad - with proper type handling
   showRewarded: async (): Promise<{ type: string; amount: number } | null> => {
     try {
       const result = await AdMob.showRewardVideoAd();

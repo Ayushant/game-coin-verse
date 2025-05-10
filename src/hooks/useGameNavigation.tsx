@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import AdService from '@/services/AdService';
+import { toast } from '@/components/ui/use-toast';
 
 /**
  * Hook to handle game navigation with interstitial ads
@@ -13,6 +14,9 @@ export function useGameNavigation() {
   const navigateToGame = async (route: string) => {
     setIsLoading(true);
     try {
+      // Initialize AdMob first if needed
+      await AdService.initialize();
+      
       // Show interstitial ad before navigating
       await AdService.showGameEntryAd();
     } catch (error) {

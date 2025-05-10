@@ -57,8 +57,17 @@ const AppContent = () => {
   useEffect(() => {
     const initializeAdMob = async () => {
       try {
-        await AdService.initialize();
-        setAdMobInitialized(true);
+        // Add a small delay before initializing AdMob to ensure device is ready
+        setTimeout(async () => {
+          try {
+            await AdService.initialize();
+            setAdMobInitialized(true);
+          } catch (innerError) {
+            console.error('Error during delayed AdMob initialization:', innerError);
+            // Continue with app even if AdMob fails to initialize
+            setAdMobInitialized(true);
+          }
+        }, 1000);
       } catch (error) {
         console.error('Error initializing AdMob:', error);
         // Continue with app even if AdMob fails to initialize
