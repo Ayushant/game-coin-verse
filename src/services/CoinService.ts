@@ -23,10 +23,15 @@ export const CoinService = {
       }
       
       // For users with Supabase accounts, update via profiles table
-      const { error } = await supabase.rpc('update_user_coins', {
-        user_id: userId,
-        coin_amount: amount
-      });
+      // Using a type assertion to bypass TypeScript's limitation
+      // since our RPC function is valid but not in the auto-generated types
+      const { error } = await supabase.rpc(
+        'update_user_coins' as any, 
+        {
+          user_id: userId,
+          coin_amount: amount
+        }
+      );
 
       if (error) throw error;
       
