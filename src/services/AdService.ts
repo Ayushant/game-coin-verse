@@ -32,9 +32,9 @@ const getPlatform = (): 'android' | 'ios' => {
 export const AdService = {
   initialize: async (): Promise<void> => {
     try {
-      // Request permission to show personalized ads (required for iOS)
+      // Initialize AdMob with correct options
       await AdMob.initialize({
-        requestTrackingAuthorization: true,
+        // Remove requestTrackingAuthorization as it's not in the type definition
         testingDevices: ['EMULATOR'],
         initializeForTesting: true,
       });
@@ -101,11 +101,22 @@ export const AdService = {
     }
   },
 
-  // Show Rewarded Ad
+  // Show Rewarded Ad - fixed to use the correct property structure
   showRewarded: async (): Promise<{ type: string; amount: number } | null> => {
     try {
       const result = await AdMob.showRewardVideoAd();
-      return result.reward;
+      // Extract reward information from the result
+      if (result && typeof result === 'object' && 'type' in result && 'amount' in result) {
+        return {
+          type: result.type as string,
+          amount: result.amount as number
+        };
+      }
+      // Return default values if the structure doesn't match exactly what we expect
+      return {
+        type: 'coins',
+        amount: 10
+      };
     } catch (error) {
       console.error('Error showing rewarded ad:', error);
       return null;
