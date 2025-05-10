@@ -1,20 +1,20 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Plugins } from '@capacitor/core';
+import { registerPlugin } from '@capacitor/core';
 
-declare module '@capacitor/core' {
-  interface PluginRegistry {
-    UnityAdsPlugin?: {
-      initialize: (options: { gameId: string, testMode: boolean }) => Promise<{ success: boolean }>;
-      loadRewardedAd: (options: { placementId: string }) => Promise<{ success: boolean }>;
-      showRewardedAd: (options: { placementId: string }) => Promise<{ 
-        success: boolean; 
-        completed: boolean;
-        skipped: boolean;
-      }>;
-    };
-  }
+// Define the plugin interface
+interface UnityAdsPlugin {
+  initialize: (options: { gameId: string, testMode: boolean }) => Promise<{ success: boolean }>;
+  loadRewardedAd: (options: { placementId: string }) => Promise<{ success: boolean }>;
+  showRewardedAd: (options: { placementId: string }) => Promise<{ 
+    success: boolean; 
+    completed: boolean;
+    skipped: boolean;
+  }>;
 }
+
+// Register the plugin with Capacitor
+const UnityAds = registerPlugin<UnityAdsPlugin>('UnityAdsPlugin');
 
 // This will check if we're in a Capacitor environment (mobile app)
 const isMobileApp = () => {
@@ -34,20 +34,17 @@ export const AdsService = {
         return false;
       }
       
-      // Check if Unity Ads plugin is available
-      const { UnityAdsPlugin } = Plugins as any;
-      
-      if (!UnityAdsPlugin) {
-        console.log('Unity Ads plugin not available');
+      try {
+        const { success } = await UnityAds.initialize({
+          gameId: '5851223',  // Your Unity Game ID
+          testMode: false     // Set to false for production
+        });
+        
+        return success;
+      } catch (error) {
+        console.error('Error initializing Unity Ads:', error);
         return false;
       }
-      
-      const { success } = await UnityAdsPlugin.initialize({
-        gameId: '5851223',  // Your Unity Game ID
-        testMode: false     // Set to false for production
-      });
-      
-      return success;
     } catch (error) {
       console.error('Error initializing Unity Ads:', error);
       return false;
@@ -68,55 +65,58 @@ export const AdsService = {
         return { success: true, watched: false };
       }
       
-      const { UnityAdsPlugin } = Plugins as any;
-      
-      if (!UnityAdsPlugin) {
-        console.log('Unity Ads plugin not available');
-        return { success: false, watched: false };
-      }
-      
-      // Load the ad first
-      const loadResult = await UnityAdsPlugin.loadRewardedAd({
-        placementId: 'Rewarded_Android'
-      });
-      
-      if (!loadResult.success) {
-        console.log('Failed to load rewarded ad');
-        return { success: false, watched: false };
-      }
-      
-      // Show the ad
-      const result = await UnityAdsPlugin.showRewardedAd({
-        placementId: 'Rewarded_Android'
-      });
-      
-      // Award coins if the ad was completed
-      if (result.success && (result.completed || result.skipped)) {
-        const coinAmount = 10; // Base amount of coins to award
+      try {
+        // Load the ad first
+        const loadResult = await UnityAds.loadRewardedAd({
+          placementId: 'Rewarded_Android'
+        });
         
-        try {
-          await supabase.rpc('update_user_coins', {
-            user_id: userId,
-            coin_amount: coinAmount
-          });
-          
-          // Log reward
-          await supabase.from('rewards').insert({
-            user_id: userId,
-            coins: coinAmount,
-            action: 'ad_reward'
-          });
-        } catch (error) {
-          console.error('Error updating coins after ad:', error);
+        if (!loadResult.success) {
+          console.log('Failed to load rewarded ad');
+          return { success: false, watched: false };
         }
         
-        return { success: true, watched: result.completed };
+        // Show the ad
+        const result = await UnityAds.showRewardedAd({
+          placementId: 'Rewarded_Android'
+        });
+        
+        // Award coins if the ad was completed or skipped
+        if (result.success && (result.completed || result.skipped)) {
+          const coinAmount = 10; // Base amount of coins to award
+          
+          try {
+            // Using the RPC function to update user coins
+            const { error } = await supabase.rpc('update_user_coins', {
+              user_id: userId,
+              coin_amount: coinAmount
+            });
+            
+            if (error) {
+              console.error('Error updating coins after ad:', error);
+            } else {
+              // Log reward
+              await supabase.from('rewards').insert({
+                user_id: userId,
+                coins: coinAmount,
+                action: 'ad_reward'
+              });
+            }
+          } catch (error) {
+            console.error('Error updating coins after ad:', error);
+          }
+          
+          return { success: true, watched: result.completed };
+        }
+        
+        return { 
+          success: result.success, 
+          watched: result.completed || false 
+        };
+      } catch (error) {
+        console.error('Error showing rewarded ad:', error);
+        return { success: false, watched: false };
       }
-      
-      return { 
-        success: result.success, 
-        watched: result.completed || false 
-      };
     } catch (error) {
       console.error('Error showing rewarded ad:', error);
       return { success: false, watched: false };
