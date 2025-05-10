@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { registerPlugin } from '@capacitor/core';
 
-// Define the plugin interface
+// Define the plugin interface with support for both Android and iOS
 interface UnityAdsPlugin {
   initialize: (options: { gameId: string, testMode: boolean }) => Promise<{ success: boolean }>;
   loadRewardedAd: (options: { placementId: string }) => Promise<{ success: boolean }>;
@@ -20,6 +20,13 @@ const UnityAds = registerPlugin<UnityAdsPlugin>('UnityAdsPlugin');
 const isMobileApp = () => {
   return window.location.href.includes('capacitor://') || 
          window.location.href.includes('forceHideBadge=true');
+};
+
+// Get the correct placement ID based on platform
+const getPlacementId = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  return isIOS ? 'Rewarded_iOS' : 'Rewarded_Android';
 };
 
 export const AdsService = {
@@ -40,6 +47,7 @@ export const AdsService = {
           testMode: false     // Set to false for production
         });
         
+        console.log('Unity Ads initialization result:', success);
         return success;
       } catch (error) {
         console.error('Error initializing Unity Ads:', error);
@@ -66,9 +74,12 @@ export const AdsService = {
       }
       
       try {
+        const placementId = getPlacementId();
+        console.log(`Loading ad for placement: ${placementId}`);
+        
         // Load the ad first
         const loadResult = await UnityAds.loadRewardedAd({
-          placementId: 'Rewarded_Android'
+          placementId: placementId
         });
         
         if (!loadResult.success) {
@@ -78,8 +89,10 @@ export const AdsService = {
         
         // Show the ad
         const result = await UnityAds.showRewardedAd({
-          placementId: 'Rewarded_Android'
+          placementId: placementId
         });
+        
+        console.log('Ad result:', result);
         
         // Award coins if the ad was completed or skipped
         if (result.success && (result.completed || result.skipped)) {

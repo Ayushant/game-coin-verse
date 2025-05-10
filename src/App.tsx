@@ -35,6 +35,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AppStorePage from "./pages/AppStorePage";
 import AppDetailPage from "./pages/AppDetailPage";
 import ManualPaymentPage from "./pages/ManualPaymentPage";
+import TechDocumentation from "./pages/TechDocumentation";
 import Index from "./pages/Index";
 
 // Create a new QueryClient instance with explicit configuration
@@ -80,6 +81,7 @@ const App = () => {
                       <Route path="withdraw" element={<WithdrawalPage />} />
                       <Route path="profile" element={<ProfilePage />} />
                       <Route path="settings" element={<SettingsPage />} />
+                      <Route path="documentation" element={<TechDocumentation />} />
                       
                       {/* App Store Routes */}
                       <Route path="store" element={<AppStorePage />} />
