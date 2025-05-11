@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.4845c753a8904842a199-54b500b269ea',
+  appId: 'com.lovable.winwitty',
   appName: 'WinWitty',
   webDir: 'dist',
   server: {
@@ -38,9 +38,7 @@ const config: CapacitorConfig = {
       appId: {
         ios: "ca-app-pub-3940256099942544~1458002511",
         android: "ca-app-pub-3940256099942544~3347511713"
-      },
-      // For mediation support, we only need to configure AdMob
-      // Unity Ads is configured in the AdMob dashboard
+      }
     }
   }
 };

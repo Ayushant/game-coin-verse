@@ -3,6 +3,6 @@
 <resources>
     <string name="app_name">WinWitty</string>
     <string name="title_activity_main">WinWitty</string>
-    <string name="package_name">app.lovable.4845c753a8904842a19954b500b269ea</string>
-    <string name="custom_url_scheme">app.lovable.4845c753a8904842a19954b500b269ea</string>
+    <string name="package_name">com.lovable.winwitty</string>
+    <string name="custom_url_scheme">com.lovable.winwitty</string>
 </resources>

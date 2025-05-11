@@ -6,8 +6,8 @@ const TEST_INTERSTITIAL_ID = 'ca-app-pub-3940256099942544/1033173712';
 
 // Actual production IDs - replace these with your actual ad unit IDs
 const INTERSTITIAL_ID = {
-  android: 'ca-app-pub-3577415915119257/YOUR_INTERSTITIAL_ID',
-  ios: 'ca-app-pub-3577415915119257/YOUR_INTERSTITIAL_ID'
+  android: TEST_INTERSTITIAL_ID, // Using test ID for safety
+  ios: TEST_INTERSTITIAL_ID // Using test ID for safety
 };
 
 // Function to determine which platform we're running on
@@ -21,22 +21,35 @@ const getPlatform = (): 'android' | 'ios' => {
 
 // Flag to track AdMob initialization status
 let isAdMobInitialized = false;
+let isInitializing = false;
 let isInterstitialReady = false;
 
 export const AdService = {
   initialize: async (): Promise<void> => {
+    // Prevent multiple simultaneous initialization attempts
+    if (isInitializing) {
+      return new Promise((resolve) => {
+        const checkInit = setInterval(() => {
+          if (isAdMobInitialized) {
+            clearInterval(checkInit);
+            resolve();
+          }
+        }, 200);
+      });
+    }
+    
+    // Return early if already initialized
+    if (isAdMobInitialized) {
+      return Promise.resolve();
+    }
+    
+    isInitializing = true;
+    
     try {
-      // Check if AdMob is already initialized
-      if (isAdMobInitialized) {
-        console.log('AdMob already initialized');
-        return;
-      }
-      
       // Initialize AdMob with correct options
       await AdMob.initialize({
-        // testingDevices is an array of device IDs that will always receive test ads
+        // Test mode for safety
         testingDevices: ['EMULATOR'],
-        // Set to true during development to show test ads
         initializeForTesting: true,
       });
       
@@ -44,42 +57,48 @@ export const AdService = {
       console.log('AdMob initialized successfully');
     } catch (error) {
       console.error('Error initializing AdMob:', error);
-      throw error;
+      // Don't throw - we'll try again later if needed
+    } finally {
+      isInitializing = false;
     }
   },
 
-  // Prepare and show an interstitial ad (combined for easier use)
+  // Prepare and show an interstitial ad with error handling
   showGameEntryAd: async (): Promise<void> => {
     try {
+      // Initialize AdMob if not already initialized
       if (!isAdMobInitialized) {
-        await AdService.initialize();
+        try {
+          await AdService.initialize();
+        } catch (initError) {
+          console.error('Failed to initialize AdMob:', initError);
+          return; // Continue without showing ad
+        }
       }
       
-      // Prepare the interstitial ad
-      try {
-        if (!isInterstitialReady) {
+      // Only try to prepare if we're reasonably sure AdMob is available
+      if (isAdMobInitialized) {
+        try {
           const options: AdOptions = {
-            adId: INTERSTITIAL_ID[getPlatform()],
+            adId: TEST_INTERSTITIAL_ID, // Always use test ID for safety
           };
+          
+          // Prepare the ad
           await AdMob.prepareInterstitial(options);
           isInterstitialReady = true;
+          
+          // Show the ad
+          await AdMob.showInterstitial();
+          isInterstitialReady = false;
+        } catch (adError) {
+          console.warn('Ad could not be shown:', adError);
+          // Do not throw - continue app function even if ad fails
+          isInterstitialReady = false;
         }
-        
-        // Show the interstitial ad
-        await AdMob.showInterstitial();
-        
-        // Reset flag after showing
-        isInterstitialReady = false;
-      } catch (adError) {
-        console.error('Error preparing or showing interstitial ad:', adError);
-        // Mark as not ready so we can try again next time
-        isInterstitialReady = false;
-        throw adError;
       }
     } catch (error) {
-      console.error('Error in showGameEntryAd:', error);
-      // Rethrow to let caller handle it
-      throw error;
+      console.warn('Error in ad service:', error);
+      // Do not throw - app should continue even if ad service fails
     }
   },
 };

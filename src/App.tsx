@@ -50,44 +50,37 @@ const queryClient = new QueryClient({
 });
 
 const AppContent = () => {
-  const [adMobInitialized, setAdMobInitialized] = useState(false);
+  const [appReady, setAppReady] = useState(false);
   
   // Initialize AdMob when app starts, but don't show ads yet
   useEffect(() => {
-    const initializeAdMob = async () => {
+    // Add a small delay before initializing to ensure device is ready
+    const initTimer = setTimeout(async () => {
       try {
-        // Add a small delay before initializing AdMob to ensure device is ready
-        setTimeout(async () => {
-          try {
-            await AdService.initialize();
-            setAdMobInitialized(true);
-          } catch (innerError) {
-            console.error('Error during delayed AdMob initialization:', innerError);
-            // Continue with app even if AdMob fails to initialize
-            setAdMobInitialized(true);
-          }
-        }, 2000); // Increased delay to ensure device is ready
+        await AdService.initialize();
       } catch (error) {
-        console.error('Error initializing AdMob:', error);
-        // Continue with app even if AdMob fails to initialize
-        setAdMobInitialized(true);
+        console.warn('AdMob initialization failed:', error);
+      } finally {
+        // Always continue with the app regardless of ad initialization
+        setAppReady(true);
       }
-    };
-    
-    initializeAdMob();
+    }, 1000);
     
     // Set a fallback timeout in case initialization takes too long
     const fallbackTimer = setTimeout(() => {
-      if (!adMobInitialized) {
-        console.warn('AdMob initialization taking too long, proceeding anyway');
-        setAdMobInitialized(true);
+      if (!appReady) {
+        console.warn('App initialization taking too long, proceeding anyway');
+        setAppReady(true);
       }
-    }, 5000);
+    }, 3000);
     
-    return () => clearTimeout(fallbackTimer);
+    return () => {
+      clearTimeout(initTimer);
+      clearTimeout(fallbackTimer);
+    };
   }, []);
   
-  if (!adMobInitialized) {
+  if (!appReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
         <div className="animate-spin rounded-full h-10 w-10 border-4 border-white border-t-transparent"></div>

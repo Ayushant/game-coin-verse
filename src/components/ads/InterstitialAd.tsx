@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import AdService from '@/services/AdService';
 
@@ -17,19 +17,45 @@ const InterstitialAd: React.FC<InterstitialAdProps> = ({
   onAdFailed,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [adInitialized, setAdInitialized] = useState(false);
+  
+  // Initialize AdMob when component mounts
+  useEffect(() => {
+    const initAds = async () => {
+      try {
+        await AdService.initialize();
+        setAdInitialized(true);
+      } catch (error) {
+        console.warn('Failed to initialize ads:', error);
+        setAdInitialized(false);
+      }
+    };
+    
+    initAds();
+  }, []);
 
   const showAd = useCallback(async () => {
+    if (!adInitialized) {
+      try {
+        await AdService.initialize();
+        setAdInitialized(true);
+      } catch (error) {
+        if (onAdFailed) onAdFailed(error);
+        return;
+      }
+    }
+    
     setLoading(true);
     try {
       await AdService.showGameEntryAd();
       if (onAdDismissed) onAdDismissed();
     } catch (error) {
-      console.error('Failed to show interstitial ad:', error);
+      console.warn('Failed to show interstitial ad:', error);
       if (onAdFailed) onAdFailed(error);
     } finally {
       setLoading(false);
     }
-  }, [onAdDismissed, onAdFailed]);
+  }, [onAdDismissed, onAdFailed, adInitialized]);
 
   return (
     <Button 
