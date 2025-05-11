@@ -40,7 +40,6 @@
             android:value="ca-app-pub-3940256099942544~3347511713"/>
     </application>
     
-    <!-- Basic permissions -->
+    <!-- Required permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-</manifest>

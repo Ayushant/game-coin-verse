@@ -13,7 +13,7 @@ const config: CapacitorConfig = {
     buildOptions: {
       keystorePath: null,
       keystoreAlias: null,
-      minSdkVersion: 21,
+      minSdkVersion: 22, // Increased from 21 for better compatibility
       targetSdkVersion: 33,
       compileSdkVersion: 33
     }
@@ -34,7 +34,6 @@ const config: CapacitorConfig = {
       lockOrientationToPortrait: true
     },
     AdMob: {
-      // These are test app IDs from AdMob documentation
       appId: {
         ios: "ca-app-pub-3940256099942544~1458002511",
         android: "ca-app-pub-3940256099942544~3347511713"

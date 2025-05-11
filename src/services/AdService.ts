@@ -1,31 +1,30 @@
 
-import { AdMob, AdOptions } from '@capacitor-community/admob';
+import { AdMob, AdOptions, BannerAdPluginEvents, AdMobBannerSize, BannerAdOptions, BannerAdPosition } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 
-// Test IDs for development - replace with actual IDs for production
-const TEST_INTERSTITIAL_ID = 'ca-app-pub-3940256099942544/1033173712';
-
-// Actual production IDs - replace these with your actual ad unit IDs
-const INTERSTITIAL_ID = {
-  android: TEST_INTERSTITIAL_ID, // Using test ID for safety
-  ios: TEST_INTERSTITIAL_ID // Using test ID for safety
-};
-
-// Function to determine which platform we're running on
-const getPlatform = (): 'android' | 'ios' => {
-  const userAgent = navigator.userAgent || navigator.vendor;
-  if (/android/i.test(userAgent)) {
-    return 'android';
-  }
-  return 'ios';
+// Test IDs for development
+const TEST_INTERSTITIAL_ID = {
+  android: 'ca-app-pub-3940256099942544/1033173712',
+  ios: 'ca-app-pub-3940256099942544/4411468910'
 };
 
 // Flag to track AdMob initialization status
 let isAdMobInitialized = false;
 let isInitializing = false;
 let isInterstitialReady = false;
+let isNativePlatform = false;
 
 export const AdService = {
   initialize: async (): Promise<void> => {
+    // Check if we're running on a native platform (Android or iOS)
+    isNativePlatform = Capacitor.isNativePlatform();
+    
+    // Skip initialization if not on a native platform
+    if (!isNativePlatform) {
+      console.log('Not running on native platform, skipping AdMob initialization');
+      return Promise.resolve();
+    }
+    
     // Prevent multiple simultaneous initialization attempts
     if (isInitializing) {
       return new Promise((resolve) => {
@@ -65,6 +64,11 @@ export const AdService = {
 
   // Prepare and show an interstitial ad with error handling
   showGameEntryAd: async (): Promise<void> => {
+    // Skip if not on a native platform
+    if (!isNativePlatform) {
+      return Promise.resolve();
+    }
+    
     try {
       // Initialize AdMob if not already initialized
       if (!isAdMobInitialized) {
@@ -79,8 +83,10 @@ export const AdService = {
       // Only try to prepare if we're reasonably sure AdMob is available
       if (isAdMobInitialized) {
         try {
+          const platform = Capacitor.getPlatform() as 'android' | 'ios';
+          
           const options: AdOptions = {
-            adId: TEST_INTERSTITIAL_ID, // Always use test ID for safety
+            adId: TEST_INTERSTITIAL_ID[platform], // Get correct platform ID
           };
           
           // Prepare the ad

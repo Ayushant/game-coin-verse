@@ -9,6 +9,7 @@ import { AdminProvider } from '@/contexts/AdminContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import AppLayout from "./components/layout/AppLayout";
 import AdService from "./services/AdService";
+import Capacitor from '@capacitor/core';
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -51,13 +52,17 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const [appReady, setAppReady] = useState(false);
+  const isNativePlatform = Capacitor.isNativePlatform();
   
   // Initialize AdMob when app starts, but don't show ads yet
   useEffect(() => {
     // Add a small delay before initializing to ensure device is ready
     const initTimer = setTimeout(async () => {
       try {
-        await AdService.initialize();
+        // Only try to initialize AdMob on native platforms
+        if (isNativePlatform) {
+          await AdService.initialize();
+        }
       } catch (error) {
         console.warn('AdMob initialization failed:', error);
       } finally {
@@ -78,7 +83,7 @@ const AppContent = () => {
       clearTimeout(initTimer);
       clearTimeout(fallbackTimer);
     };
-  }, []);
+  }, [isNativePlatform]);
   
   if (!appReady) {
     return (
