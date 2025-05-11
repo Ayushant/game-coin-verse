@@ -2,10 +2,9 @@
 import { AdMob, AdOptions, BannerAdPluginEvents, AdMobBannerSize, BannerAdOptions, BannerAdPosition } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
-// Test IDs for development
+// Test ID for development
 const TEST_INTERSTITIAL_ID = {
-  android: 'ca-app-pub-3940256099942544/1033173712',
-  ios: 'ca-app-pub-3940256099942544/4411468910'
+  android: 'ca-app-pub-3940256099942544/1033173712'
 };
 
 // Flag to track AdMob initialization status
@@ -16,7 +15,7 @@ let isNativePlatform = false;
 
 export const AdService = {
   initialize: async (): Promise<void> => {
-    // Check if we're running on a native platform (Android or iOS)
+    // Check if we're running on a native platform (Android)
     isNativePlatform = Capacitor.isNativePlatform();
     
     // Skip initialization if not on a native platform
@@ -83,10 +82,8 @@ export const AdService = {
       // Only try to prepare if we're reasonably sure AdMob is available
       if (isAdMobInitialized) {
         try {
-          const platform = Capacitor.getPlatform() as 'android' | 'ios';
-          
           const options: AdOptions = {
-            adId: TEST_INTERSTITIAL_ID[platform], // Get correct platform ID
+            adId: TEST_INTERSTITIAL_ID.android, // Android-specific ID
           };
           
           // Prepare the ad

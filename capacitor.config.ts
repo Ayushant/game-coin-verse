@@ -18,11 +18,6 @@ const config: CapacitorConfig = {
       compileSdkVersion: 33
     }
   },
-  ios: {
-    contentInset: 'automatic',
-    scheme: 'WinWitty',
-    backgroundColor: '#6b46c1'
-  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -35,7 +30,6 @@ const config: CapacitorConfig = {
     },
     AdMob: {
       appId: {
-        ios: "ca-app-pub-3940256099942544~1458002511",
         android: "ca-app-pub-3940256099942544~3347511713"
       }
     }
