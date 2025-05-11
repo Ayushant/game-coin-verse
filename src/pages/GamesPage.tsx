@@ -1,10 +1,7 @@
-
 import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import BannerAd from '@/components/ads/BannerAd';
-import { BannerAdPosition } from '@capacitor-community/admob';
 import { useGameNavigation } from '@/hooks/useGameNavigation';
 
 interface Game {
@@ -126,9 +123,6 @@ const GamesPage = () => {
           ))}
         </div>
       </div>
-      
-      {/* Show banner ad only on mobile devices */}
-      {isMobile && <BannerAd position={BannerAdPosition.BOTTOM_CENTER} />}
     </div>
   );
 };

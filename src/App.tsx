@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -67,7 +66,7 @@ const AppContent = () => {
             // Continue with app even if AdMob fails to initialize
             setAdMobInitialized(true);
           }
-        }, 1000);
+        }, 2000); // Increased delay to ensure device is ready
       } catch (error) {
         console.error('Error initializing AdMob:', error);
         // Continue with app even if AdMob fails to initialize
@@ -76,6 +75,16 @@ const AppContent = () => {
     };
     
     initializeAdMob();
+    
+    // Set a fallback timeout in case initialization takes too long
+    const fallbackTimer = setTimeout(() => {
+      if (!adMobInitialized) {
+        console.warn('AdMob initialization taking too long, proceeding anyway');
+        setAdMobInitialized(true);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(fallbackTimer);
   }, []);
   
   if (!adMobInitialized) {
