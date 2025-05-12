@@ -9,8 +9,6 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import AppLayout from "./components/layout/AppLayout";
-import AdService from "./services/AdService";
-import { Capacitor } from '@capacitor/core';
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -39,7 +37,7 @@ import AppDetailPage from "./pages/AppDetailPage";
 import ManualPaymentPage from "./pages/ManualPaymentPage";
 import TechDocumentation from "./pages/TechDocumentation";
 import Index from "./pages/Index";
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 // Create a new QueryClient instance with explicit configuration
 const queryClient = new QueryClient({
@@ -52,48 +50,8 @@ const queryClient = new QueryClient({
 });
 
 const AppContent = () => {
-  const [appReady, setAppReady] = useState(false);
-  const isNativePlatform = Capacitor.isNativePlatform();
+  const [appReady, setAppReady] = useState(true); // Always ready since no ads to initialize
   
-  // Initialize AdMob when app starts, but don't show ads yet
-  useEffect(() => {
-    // Add a small delay before initializing to ensure device is ready
-    const initTimer = setTimeout(async () => {
-      try {
-        // Only try to initialize AdMob on native platforms
-        if (isNativePlatform) {
-          await AdService.initialize();
-        }
-      } catch (error) {
-        console.warn('AdMob initialization failed:', error);
-      } finally {
-        // Always continue with the app regardless of ad initialization
-        setAppReady(true);
-      }
-    }, 1000);
-    
-    // Set a fallback timeout in case initialization takes too long
-    const fallbackTimer = setTimeout(() => {
-      if (!appReady) {
-        console.warn('App initialization taking too long, proceeding anyway');
-        setAppReady(true);
-      }
-    }, 3000);
-    
-    return () => {
-      clearTimeout(initTimer);
-      clearTimeout(fallbackTimer);
-    };
-  }, [isNativePlatform]);
-  
-  if (!appReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-game-purple to-game-purple-dark text-white">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-white border-t-transparent"></div>
-      </div>
-    );
-  }
-
   return (
     <BrowserRouter>
       <Routes>

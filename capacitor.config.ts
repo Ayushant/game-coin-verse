@@ -27,11 +27,6 @@ const config: CapacitorConfig = {
     },
     CapacitorScreenOrientation: {
       lockOrientationToPortrait: true
-    },
-    AdMob: {
-      appId: {
-        android: "ca-app-pub-3940256099942544~3347511713"
-      }
     }
   }
 };
