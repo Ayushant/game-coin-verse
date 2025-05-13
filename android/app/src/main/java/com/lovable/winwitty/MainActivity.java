@@ -1,3 +1,4 @@
+
 package com.lovable.winwitty;
 
 import android.os.Bundle;
@@ -7,6 +8,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // AdMob plugin registration removed
+        // App initialized with only core functionality
     }
 }
