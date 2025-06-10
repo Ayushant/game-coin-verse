@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +19,7 @@ const gameList: Game[] = [
     title: 'Tic Tac Toe',
     description: 'A classic game of Xs and Os.',
     imageUrl: 'https://images.unsplash.com/photo-1611996575749-79a3a250f948?q=80&w=500&auto=format&fit=crop',
-    route: '/games/tictactoe',
+    route: '/games/tic-tac-toe',
   },
   {
     id: '2048',
@@ -39,21 +40,21 @@ const gameList: Game[] = [
     title: 'Math Challenge',
     description: 'Test your math skills.',
     imageUrl: 'https://images.unsplash.com/photo-1596495577886-d920f1fb7238?q=80&w=500&auto=format&fit=crop',
-    route: '/games/mathchallenge',
+    route: '/games/math-challenge',
   },
   {
     id: 'blockpuzzle',
     title: 'Block Puzzle',
     description: 'Fit the blocks together.',
     imageUrl: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?q=80&w=500&auto=format&fit=crop',
-    route: '/games/blockpuzzle',
+    route: '/games/block-puzzle',
   },
   {
     id: 'memorymatch',
     title: 'Memory Match',
     description: 'Match the pairs.',
     imageUrl: 'https://images.unsplash.com/photo-1606167668584-78701c57f13d?q=80&w=500&auto=format&fit=crop',
-    route: '/games/memorymatch',
+    route: '/games/memory-match',
   },
   {
     id: 'quiz',

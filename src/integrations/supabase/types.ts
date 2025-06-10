@@ -157,9 +157,13 @@ export type Database = {
           avatar_url: string | null
           coins: number | null
           created_at: string | null
+          has_withdrawn: boolean | null
           id: string
           is_guest: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
+          subscription_end: string | null
+          subscription_status: string | null
+          total_earned: number | null
           updated_at: string | null
           username: string | null
         }
@@ -167,9 +171,13 @@ export type Database = {
           avatar_url?: string | null
           coins?: number | null
           created_at?: string | null
+          has_withdrawn?: boolean | null
           id: string
           is_guest?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          subscription_end?: string | null
+          subscription_status?: string | null
+          total_earned?: number | null
           updated_at?: string | null
           username?: string | null
         }
@@ -177,9 +185,13 @@ export type Database = {
           avatar_url?: string | null
           coins?: number | null
           created_at?: string | null
+          has_withdrawn?: boolean | null
           id?: string
           is_guest?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          subscription_end?: string | null
+          subscription_status?: string | null
+          total_earned?: number | null
           updated_at?: string | null
           username?: string | null
         }
@@ -265,6 +277,82 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          end_date: string
+          id: string
+          plan: string
+          start_date: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          end_date: string
+          id?: string
+          plan: string
+          start_date?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          plan?: string
+          start_date?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_missions: {
         Row: {
           completed: boolean | null
@@ -345,9 +433,22 @@ export type Database = {
         Args: { admin_email: string }
         Returns: undefined
       }
+      check_subscription_required: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      update_subscription_status: {
+        Args: {
+          p_user_id: string
+          p_plan: string
+          p_amount: number
+          p_duration_months?: number
+        }
+        Returns: undefined
       }
     }
     Enums: {
