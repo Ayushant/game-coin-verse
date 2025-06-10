@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { TransactionService } from './TransactionService';
 
 interface UpdateCoinOptions {
   userId: string;
@@ -35,7 +35,15 @@ export const CoinService = {
 
       if (error) throw error;
       
-      // Log the transaction in the rewards table for tracking
+      // Create a transaction record for tracking earnings
+      await TransactionService.createTransaction({
+        userId: userId,
+        amount: amount,
+        type: action.includes('withdrawal') ? 'withdrawal' : 'game',
+        description: action
+      });
+      
+      // Log the transaction in the rewards table for backward compatibility
       await supabase.from('rewards').insert({
         user_id: userId,
         coins: amount,

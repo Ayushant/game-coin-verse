@@ -1,158 +1,212 @@
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Bell, Gift, Target, Calendar, Zap } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { Badge } from '@/components/ui/badge';
+import SubscriptionPrompt from '@/components/SubscriptionPrompt';
 import CoinDisplay from '@/components/ui/CoinDisplay';
-import SpinWheel from '@/components/games/SpinWheel';
+import { 
+  GamepadIcon, 
+  Trophy, 
+  Coins, 
+  Store,
+  Clock,
+  Star
+} from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { subscriptionRequired, checkSubscriptionStatus } = useSubscription();
+  const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
 
   useEffect(() => {
-    // Redirect to login if no user
-    if (!user) {
-      navigate('/login');
+    if (user && !user.isGuest) {
+      checkSubscriptionStatus();
     }
-  }, [user, navigate]);
+  }, [user, checkSubscriptionStatus]);
 
-  if (!user) return null;
+  useEffect(() => {
+    if (subscriptionRequired) {
+      setShowSubscriptionPrompt(true);
+    }
+  }, [subscriptionRequired]);
+
+  const quickStats = [
+    {
+      title: "Current Balance",
+      value: user?.coins || 0,
+      icon: Coins,
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50 dark:bg-yellow-900/20"
+    },
+    {
+      title: "Games Played",
+      value: "0", // This would come from actual game data
+      icon: GamepadIcon,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50 dark:bg-blue-900/20"
+    },
+    {
+      title: "Total Earned",
+      value: "₹0", // This would come from transactions data
+      icon: Trophy,
+      color: "text-green-600",
+      bgColor: "bg-green-50 dark:bg-green-900/20"
+    }
+  ];
+
+  const quickActions = [
+    {
+      title: "Play Games",
+      description: "Earn coins by playing fun games",
+      icon: GamepadIcon,
+      href: "/games",
+      color: "bg-blue-500 hover:bg-blue-600"
+    },
+    {
+      title: "App Store",
+      description: "Browse and download paid apps",
+      icon: Store,
+      href: "/store",
+      color: "bg-purple-500 hover:bg-purple-600"
+    },
+    {
+      title: "Withdraw",
+      description: "Convert your coins to real money",
+      icon: Coins,
+      href: "/withdraw",
+      color: "bg-green-500 hover:bg-green-600"
+    }
+  ];
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Welcome to WinWitty</CardTitle>
+            <CardDescription>Please log in to access your dashboard</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Link to="/login">
+              <Button className="w-full">Log In</Button>
+            </Link>
+            <Link to="/register">
+              <Button variant="outline" className="w-full">Sign Up</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">WinWitty</h1>
-          <p className="text-white/80">
-            {user.isGuest ? 'Guest User' : user.email || 'User'}
+          <h1 className="text-2xl font-bold text-white">
+            Welcome back, {user.username || 'Player'}!
+          </h1>
+          <p className="text-gray-400">
+            {user.isGuest ? (
+              <>Guest mode - <Link to="/register" className="text-blue-400 hover:underline">Sign up to save progress</Link></>
+            ) : (
+              'Ready to play and earn?'
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <CoinDisplay />
-          <Bell className="h-6 w-6 text-white cursor-pointer" />
-        </div>
+        <CoinDisplay />
       </div>
 
-      {/* Daily Bonus & Missions */}
-      <Card className="game-card p-4 mb-4">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="game-card-header flex items-center">
-            <Gift className="mr-2 h-5 w-5" />
-            Daily Bonus & Missions
-          </h2>
-          <button className="bg-game-gold text-white px-3 py-1 rounded-full text-sm font-bold">
-            GO
-          </button>
-        </div>
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">
-          Earn more coins by completing missions
-        </p>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <Target className="h-4 w-4 mr-2 text-game-purple" />
-              <span className="text-sm">Daily login</span>
+      {/* Subscription Status */}
+      {!user.isGuest && (
+        <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+          <CardContent className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-3">
+              <Star className="h-5 w-5 text-amber-500" />
+              <div>
+                <p className="font-medium">Subscription Status</p>
+                <p className="text-sm text-muted-foreground">
+                  {subscriptionRequired ? 'Subscription required to continue earning' : 'Active - Keep earning!'}
+                </p>
+              </div>
             </div>
-            <span className="text-game-gold text-sm font-medium">+10 coins</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-2 text-game-purple" />
-              <span className="text-sm">Play 3 games</span>
-            </div>
-            <span className="text-game-gold text-sm font-medium">+15 coins</span>
-          </div>
-        </div>
-      </Card>
+            {subscriptionRequired && (
+              <Button 
+                onClick={() => setShowSubscriptionPrompt(true)}
+                className="bg-amber-500 hover:bg-amber-600"
+              >
+                Upgrade Now
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Spin Wheel */}
-      <div className="grid grid-cols-1 gap-4 mb-4">
-        <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
-          <SpinWheel />
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {quickStats.map((stat, index) => (
+          <Card key={index}>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.title}</p>
+                  <p className="text-xl font-bold">{stat.value}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4 text-white">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {quickActions.map((action, index) => (
+            <Link key={index} to={action.href}>
+              <Card className="transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                <CardContent className="p-6 text-center">
+                  <div className={`inline-flex p-3 rounded-full text-white mb-4 ${action.color}`}>
+                    <action.icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="font-semibold mb-2">{action.title}</h3>
+                  <p className="text-sm text-muted-foreground">{action.description}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Play Games */}
-      <Card className="game-card p-4 mb-4">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="game-card-header flex items-center">
-            <Zap className="mr-2 h-5 w-5" />
-            Play Games
-          </h2>
-          <button 
-            className="text-game-purple text-sm font-bold"
-            onClick={() => navigate('/games')}
-          >
-            See all
-          </button>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          <GamePreview 
-            title="Tic Tac Toe" 
-            coins={5} 
-            onClick={() => navigate('/games/tictactoe')} 
-          />
-          <GamePreview 
-            title="2048" 
-            coins={10} 
-            onClick={() => navigate('/games/2048')} 
-          />
-        </div>
+      {/* Recent Activity Placeholder */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Clock className="h-5 w-5" />
+            <span>Recent Activity</span>
+          </CardTitle>
+          <CardDescription>Your latest earnings and activities</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-muted-foreground py-8">
+            No recent activity. Start playing games to see your earnings here!
+          </p>
+        </CardContent>
       </Card>
 
-      {/* Download Apps */}
-      <Card className="game-card p-4 mb-4">
-        <div className="flex justify-between items-center">
-          <h3 className="game-card-header">Download Apps</h3>
-          <span className="text-xs text-game-gold font-medium">+100 coins</span>
-        </div>
-        <p className="text-gray-600 dark:text-gray-300 text-sm">
-          Download apps to earn more coins
-        </p>
-      </Card>
-    </div>
-  );
-};
-
-interface GamePreviewProps {
-  title: string;
-  coins: number;
-  onClick: () => void;
-}
-
-const GamePreview = ({ title, coins, onClick }: GamePreviewProps) => {
-  return (
-    <div 
-      className="flex-shrink-0 w-24 cursor-pointer transition-transform hover:scale-105"
-      onClick={onClick}
-    >
-      <div className="bg-game-purple/20 h-24 w-24 rounded-lg mb-2 flex items-center justify-center shadow-md">
-        {title === 'Tic Tac Toe' ? (
-          <svg className="h-12 w-12 text-game-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="9" y1="3" x2="9" y2="21" />
-            <line x1="15" y1="3" x2="15" y2="21" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="3" y1="15" x2="21" y2="15" />
-          </svg>
-        ) : (
-          <div className="grid grid-cols-2 gap-1">
-            <div className="h-5 w-5 bg-game-purple-light rounded-sm flex items-center justify-center text-white text-xs">2</div>
-            <div className="h-5 w-5 bg-game-purple rounded-sm flex items-center justify-center text-white text-xs">4</div>
-            <div className="h-5 w-5 bg-game-purple-dark rounded-sm flex items-center justify-center text-white text-xs">8</div>
-            <div className="h-5 w-5 bg-game-gold rounded-sm flex items-center justify-center text-white text-xs">16</div>
-          </div>
-        )}
-      </div>
-      <h4 className="text-sm font-medium text-center">{title}</h4>
-      <div className="flex justify-center items-center mt-1">
-        <svg className="h-3 w-3 text-game-gold mr-1" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="12" r="10" />
-        </svg>
-        <span className="text-xs text-game-gold">{coins}</span>
-      </div>
+      {/* Subscription Prompt Modal */}
+      <SubscriptionPrompt 
+        open={showSubscriptionPrompt} 
+        onOpenChange={setShowSubscriptionPrompt}
+      />
     </div>
   );
 };
