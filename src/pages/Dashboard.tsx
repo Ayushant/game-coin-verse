@@ -8,13 +8,15 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Badge } from '@/components/ui/badge';
 import SubscriptionPrompt from '@/components/SubscriptionPrompt';
 import CoinDisplay from '@/components/ui/CoinDisplay';
+import SpinWheel from '@/components/games/SpinWheel';
 import { 
   GamepadIcon, 
   Trophy, 
   Coins, 
   Store,
   Clock,
-  Star
+  Star,
+  Gift
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -146,6 +148,34 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Rewards Section with Spin Wheel */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4 text-white flex items-center">
+          <Gift className="h-5 w-5 mr-2 text-game-purple" />
+          Daily Rewards
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <SpinWheel />
+          <Card className="game-card p-4 flex flex-col">
+            <div className="relative overflow-hidden h-full">
+              <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 absolute inset-0 rounded-xl z-0"></div>
+              <h3 className="game-card-header relative z-10 flex items-center">
+                <Trophy className="mr-2 h-5 w-5 text-blue-500 animate-bounce-subtle" />
+                Daily Bonus
+              </h3>
+              <div className="flex justify-between items-end mt-auto relative z-10">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Complete daily tasks for <span className="text-blue-500 font-bold">bonus</span> coins
+                </p>
+                <div className="bg-gradient-to-br from-blue-500/30 to-blue-600/30 p-2 rounded-full">
+                  <Clock className="h-8 w-8 text-blue-500" />
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
