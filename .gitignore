@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Build files
+android/.gradle/
+android/app/build/
+android/build/
+.gradle/
+build/
+
+# Local configuration files
+android/local.properties
+*.env
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Capacitor generated files
+android/app/src/main/assets/public/

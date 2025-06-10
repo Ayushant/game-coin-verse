@@ -1,0 +1,22 @@
+{
+	"appId": "com.lovable.winwitty",
+	"appName": "WinWitty",
+	"webDir": "dist",
+	"android": {
+		"minWebViewVersion": 55,
+		"allowMixedContent": true,
+		"initialFocus": true,
+		"webContentsDebuggingEnabled": true
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 1000,
+			"backgroundColor": "#6b46c1",
+			"showSpinner": true,
+			"spinnerColor": "#ffffff"
+		},
+		"CapacitorScreenOrientation": {
+			"lockOrientationToPortrait": true
+		}
+	}
+}
